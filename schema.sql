@@ -1,3 +1,5 @@
+DROP TABLE IF EXISTS departments;
+
 CREATE TABLE departments(
   id SERIAL PRIMARY KEY,
   name TEXT NOT NULL
@@ -26,7 +28,7 @@ VALUES
   ('District Attorney''s Office' ), 
   ('Sheriff''s');
 
-CREATE TABLE users (
+CREATE TABLE IF NOT EXISTS users (
   id integer PRIMARY KEY,
   first_name varchar(25) NOT NULL,
   last_name varchar(25) NOT NULL,
@@ -36,15 +38,15 @@ CREATE TABLE users (
   department_id integer REFERENCES departments
 );
 
-CREATE TABLE rocs (
+CREATE TABLE IF NOT EXISTS rocs (
   id integer PRIMARY KEY,
   amount_in_cents integer NOT NULL,
-  roc bytea NOT NULL,
+  roc MEDIUMBLOB NOT NULL,
   claimed_date DATE NOT NULL,
   user_id integer REFERENCES users
 );
 
-CREATE TABLE ach_credits (
+CREATE TABLE IF NOT EXISTS ach_credits (
   id integer PRIMARY KEY,
   amount_in_cents integer,
   fund text,
@@ -54,9 +56,9 @@ CREATE TABLE ach_credits (
   department_id integer REFERENCES departments
 );
 
-CREATE TABLE supporting_docs (
+CREATE TABLE IF NOT EXISTS supporting_docs (
   id integer PRIMARY KEY,
   filename text NOT NULL,
-  doc bytea NOT NULL,
+  doc MEDIUMBLOB NOT NULL,
   roc_id integer REFERENCES rocs
 );
