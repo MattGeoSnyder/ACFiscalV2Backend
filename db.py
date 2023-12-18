@@ -6,10 +6,10 @@ import MySQLdb
 import MySQLdb.cursors as Cursors
 
 db = MySQLdb.connect(
-    host=os.getenv("DATABASE_HOST"),
-    user=os.getenv("DATABASE_USERNAME"),
-    passwd=os.getenv("DATABASE_PASSWORD"),
-    db=os.getenv("DATABASE"),
+    host=os.getenv("DB_HOST"),
+    user=os.getenv("DB_USERNAME"),
+    passwd=os.getenv("DB_PASSWORD"),
+    db=os.getenv("DB_NAME"),
     autocommit=True,
     ssl_mode="VERIFY_IDENTITY",
     ssl={"ca": "/etc/ssl/certs/ca-certificates.crt"},

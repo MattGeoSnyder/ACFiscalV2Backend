@@ -29,7 +29,7 @@ VALUES
   ('Sheriff''s');
 
 CREATE TABLE IF NOT EXISTS users (
-  id integer PRIMARY KEY,
+  id SERIAL PRIMARY KEY,
   first_name varchar(25) NOT NULL,
   last_name varchar(25) NOT NULL,
   email varchar(75) NOT NULL UNIQUE,
@@ -39,7 +39,7 @@ CREATE TABLE IF NOT EXISTS users (
 );
 
 CREATE TABLE IF NOT EXISTS rocs (
-  id integer PRIMARY KEY,
+  id SERIAL PRIMARY KEY,
   amount_in_cents integer NOT NULL,
   roc MEDIUMBLOB NOT NULL,
   claimed_date DATE NOT NULL,
@@ -47,7 +47,7 @@ CREATE TABLE IF NOT EXISTS rocs (
 );
 
 CREATE TABLE IF NOT EXISTS ach_credits (
-  id integer PRIMARY KEY,
+  id SERIAL PRIMARY KEY,
   amount_in_cents integer,
   fund text,
   description text,
@@ -57,7 +57,7 @@ CREATE TABLE IF NOT EXISTS ach_credits (
 );
 
 CREATE TABLE IF NOT EXISTS supporting_docs (
-  id integer PRIMARY KEY,
+  id SERIAL PRIMARY KEY,
   filename text NOT NULL,
   doc MEDIUMBLOB NOT NULL,
   roc_id integer REFERENCES rocs
