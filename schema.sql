@@ -28,23 +28,28 @@ VALUES
   ('District Attorney''s Office' ), 
   ('Sheriff''s');
 
+DROP TABLE IF EXISTS users;
+
 CREATE TABLE IF NOT EXISTS users (
   id SERIAL PRIMARY KEY,
   first_name varchar(25) NOT NULL,
   last_name varchar(25) NOT NULL,
   email varchar(75) NOT NULL UNIQUE,
-  password varchar(30) NOT NULL,
+  password text NOT NULL,
   auth boolean DEFAULT false,
   department_id integer REFERENCES departments
 );
+
+DROP TABLE IF EXISTS rocs;
 
 CREATE TABLE IF NOT EXISTS rocs (
   id SERIAL PRIMARY KEY,
   amount_in_cents integer NOT NULL,
   roc MEDIUMBLOB NOT NULL,
-  claimed_date DATE NOT NULL,
   user_id integer REFERENCES users
 );
+
+DROP TABLE IF EXISTS ach_credits;
 
 CREATE TABLE IF NOT EXISTS ach_credits (
   id SERIAL PRIMARY KEY,
@@ -52,9 +57,12 @@ CREATE TABLE IF NOT EXISTS ach_credits (
   fund text,
   description text,
   received date,
+  claimed date,
   roc_id integer REFERENCES rocs,
   department_id integer REFERENCES departments
 );
+
+DROP TABLE IF EXISTS supporting_docs;
 
 CREATE TABLE IF NOT EXISTS supporting_docs (
   id SERIAL PRIMARY KEY,
