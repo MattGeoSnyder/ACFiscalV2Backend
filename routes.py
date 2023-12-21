@@ -22,9 +22,9 @@ async def callAPI(
         raise HTTPException(status_code=422, detail=e["msg"])
     except MySQLdb.Error as e:
         raise HTTPException(status_code=500, detail=e["msg"])
-    finally:
+    except Exception as e:
+        print(e)
         raise HTTPException(status_code=500, detail="Unknown Error")
-
 
 @app.get("/")
 async def root():
