@@ -1,14 +1,16 @@
-from fastapi import FastAPI, Path, HTTPException, Depends
-from fastapi.security import OAuth2PasswordRequestForm
+from fastapi import FastAPI, Path, HTTPException, Depends, Body, Form
+from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
 import MySQLdb
 import uvicorn
 from api import API
 from typing import Callable, List, Dict, Any
 from pydantic import ValidationError
 from typing_extensions import Annotated
-from models import NewUser, User, Token
+from models import NewUser, User, Token, TokenRequestForm
 
 app = FastAPI()
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 
 async def callAPI(
@@ -30,13 +32,13 @@ async def root():
 
 
 @app.post("/token", response_model=Token)
-async def get_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
-    token = await callAPI(API.verify_token, form_data)
+async def get_access_token(email: str = Form(), password: str = Form()):
+    token = await callAPI(API.verify_token, {"email": email, "password": password})
     return {"token": token, "token_type": "bearer"}
 
 
-@app.post("/auth/signup")
-async def signup(new_user: NewUser):
+@app.post("/signup")
+async def signup(new_user: NewUser = Body(Depends())):
     await callAPI(API.signup, new_user.model_dump())
     return {"msg": "User created successfully"}
 

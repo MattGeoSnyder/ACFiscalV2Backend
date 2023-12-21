@@ -31,7 +31,7 @@ def create_access_token(data: Dict):
     return encoded_jwt
 
 
-async def authenticate_user(email: str, password: str):
+def authenticate_user(email: str, password: str):
     user = API.get_user_by_email(email).get("user")
     if not user:
         return False
@@ -94,12 +94,16 @@ class API:
 
             return {"msg": "User successfully created!"}
 
-    def verify_token(self, form_data: OAuth2PasswordRequestForm):
-        user = API.get_user_by_email(form_data.username)
+    def verify_token(self, form_data):
+        user = API.get_user_by_email(form_data.get("email"))
         if not User:
             raise HTTPException(401, "Unauthorized")
         token = create_access_token(
-            data={"id": user.get("id"), "email": user.get("email")}
+            data={
+                "id": user.get("id"),
+                "email": user.get("email"),
+                "department_id": user.get("department_id"),
+            }
         )
         return token
 
@@ -120,7 +124,7 @@ class API:
     def get_user_by_id(self, id: int):
         with self.cursor() as cursor:
             cursor.execute(
-                "SELECT id, email, first_name, last_name FROM users WHERE id = %s;",
+                "SELECT id, email, first_name, last_name, department_id FROM users WHERE id = %s;",
                 (id,),
             )
             user = cursor.fetchone()
@@ -130,7 +134,7 @@ class API:
     def get_user_by_email(self, email: str):
         with self.cursor() as cursor:
             cursor.execute(
-                "SELECT id, email, first_name, last_name FROM users WHERE email = %s;",
+                "SELECT id, email, first_name, last_name, department_id FROM users WHERE email = %s;",
                 (email,),
             )
 
