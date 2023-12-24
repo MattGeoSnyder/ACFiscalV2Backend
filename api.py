@@ -3,7 +3,7 @@ from db import db
 import MySQLdb
 from passlib.context import CryptContext
 from jose import JWTError, jwt
-from typing import Dict
+from typing import Dict, List
 from dotenv import load_dotenv
 import os
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
@@ -121,6 +121,15 @@ class API:
 
             return department
 
+    def get_all_users(self) -> List[User]:
+        with self.cursor() as cursor:
+            cursor.execute(
+                "SELECT id, email, first_name, last_name, department_id FROM users;"
+            )
+
+            users = cursor.fetchall()
+            return users
+
     def get_user_by_id(self, id: int):
         with self.cursor() as cursor:
             cursor.execute(
@@ -140,6 +149,76 @@ class API:
 
             user = cursor.fetchone()
             return user
+
+    def search_ach_credits(self, **kwargs):
+        query = ""
+        params = []
+
+        if kwargs["outstanding"]:
+            query += "SELECT * FROM ach_credits WHERE claimed IS NULL "
+        else:
+            query += "SELECT * FROM ach_credits WHERE claimed IS NOT NULL "
+
+        if kwargs["amount_lb"] and kwargs["amount_ub"]:
+            query += "AND amount BETWEEN %s AND %s "
+            params.append(kwargs["amount_lb"])
+            params.append(kwargs["amount_ub"])
+        elif kwargs["amount_lb"]:
+            query += "AND amount > %s "
+            params.append(kwargs["amount_lb"])
+        elif kwargs["amount_ub"]:
+            query += "AND amount < %s "
+
+        if kwargs["fund"]:
+            query += "AND fund = %s "
+            params.append(kwargs["fund"])
+
+        if kwargs["description"]:
+            query += "AND description ILIKE %s "
+            params.append(kwargs["description"])
+
+        if kwargs["received_lb"] and kwargs["received_ub"]:
+            query += "AND received BETWEEN %s AND %s "
+            params.append(kwargs["received_lb"])
+            params.append(kwargs["received_ub"])
+        elif kwargs["received_lb"]:
+            query += "AND received > %s "
+            params.append(kwargs["received_lb"])
+        elif kwargs["received_ub"]:
+            query += "AND received < %s "
+            params.append(kwargs["received_ub"])
+
+        if kwargs["claimed_lb"] and kwargs["claimed_ub"]:
+            query += "AND claimed BETWEEN %s AND %s "
+            params.append(kwargs["claimed_lb"])
+            params.append(kwargs["claimed_ub"])
+        elif kwargs["claimed_lb"]:
+            query += "AND claimed > %s "
+            params.append(kwargs["claimed_lb"])
+        elif kwargs["claimed_ub"]:
+            query += "AND claimed < %s "
+            params.append(kwargs["claimed_ub"])
+
+        if kwargs["roc_id"]:
+            query += "AND roc_id = %s "
+            params.append(kwargs["roc_id"])
+
+        if kwargs["department_id"]:
+            query += "AND department_id = %s "
+            params.append(kwargs["department_id"])
+
+        if kwargs["skip"]:
+            query += "SKIP %s "
+            params.append(kwargs["skip"])
+
+        query += "LIMIT %s"
+        params.append(kwargs["limit"])
+
+        with self.cursor() as cursor:
+            cursor.execute(query, (*params,))
+
+            ach_credits = cursor.fetchall()
+            return ach_credits
 
 
 API = API(db)

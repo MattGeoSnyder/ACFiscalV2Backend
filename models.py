@@ -44,18 +44,32 @@ class NewUser(BaseModel):
     # }
 
 
-class User(BaseModel):
-    first_name: str = Field("First Name", max_length=25)
-    last_name: str = Field("Last Name", max_length=25)
-    email: str = Field(
-        "Matthew.Snyder@alleghenycounty.us",
-        max_length=75,
-        pattern=r"[a-z,A-Z]+.[a-z,A-Z]+@alleghenycounty.us$",
-        description="Must use Allegheny County email. Email must be less than 75 characters long.",
-    )
-    department_id: int = Field("1", gt=0)
-
-
 class User(NewUser):
-    id: int
-    auth: bool
+    id: int = Field(gt=0)
+    password: str = Field(exclude=True)
+
+
+class NewAchCredit(BaseModel):
+    amount_in_cents: int
+    fund: int
+    description: str
+    received: str
+    claimed: str
+    roc_id: int
+    department_id: int
+
+
+class AchSearchParams(BaseModel):
+    outstanding: bool
+    amount_lb: Union[int, None] = Field(None)
+    amount_ub: Union[int, None] = Field(None)
+    fund: Union[int, None] = Field(None)
+    description: Union[str, None] = Field(None)
+    received_lb: Union[str, None] = Field(None)
+    received_ub: Union[str, None] = Field(None)
+    claimed_lb: Union[str, None] = Field(None)
+    claimed_ub: Union[str, None] = Field(None)
+    roc_id: Union[int, None] = Field(None)
+    department_id: Union[int, None] = Field(None)
+    limit: Union[int, None] = Field()
+    skip: int = Field(0, ge=0)
