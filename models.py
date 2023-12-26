@@ -50,14 +50,18 @@ class User(NewUser):
 
 
 class NewAchCredit(BaseModel):
-    amount_in_cents: int
+    amount_in_cents: int = Field(ge=0)
     fund: int
     description: str
     received: str
-    claimed: str
-    roc_id: int
-    department_id: int
+    claimed: Union[str, None] = Field(None)
+    roc_id: Union[int, None] = Field(None, gt=0)
+    department_id: Union[int, None] = Field(None, gt=0)
 
+class NewCreditDescription(BaseModel):
+    description: str
+    fund: int
+    department_id: int
 
 class AchSearchParams(BaseModel):
     outstanding: bool

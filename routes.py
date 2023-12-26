@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Path, HTTPException, Depends, Body, Form
+from fastapi import FastAPI, Path, HTTPException, Depends, Body, Form, UploadFile
 from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
 import MySQLdb
 import uvicorn
@@ -6,7 +6,8 @@ from api import API
 from typing import Callable, List, Dict, Any
 from pydantic import ValidationError
 from typing_extensions import Annotated
-from models import NewUser, User, Token, TokenRequestForm, AchSearchParams, NewAchCredit
+from models import NewUser, User, Token, TokenRequestForm, AchSearchParams, NewAchCredit, NewCreditDescription
+import pdb
 
 app = FastAPI()
 
@@ -17,14 +18,15 @@ async def callAPI(
     func: Callable, *args: List, **kwargs: Dict[str, Any]
 ) -> Dict[str, Any]:
     try:
-        return func(*args, **kwargs)
+        return await func(*args, **kwargs)
     except ValidationError as e:
-        raise HTTPException(status_code=422, detail=e["msg"])
+        raise HTTPException(status_code=422, detail=str(e))
     except MySQLdb.Error as e:
-        raise HTTPException(status_code=500, detail=e["msg"])
+        raise HTTPException(status_code=500, detail=str(e))
     except Exception as e:
-        print(e)
-        raise HTTPException(status_code=500, detail="Unknown Error")
+        # pdb.set_trace()
+        print(dir(e))
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.get("/")
@@ -87,9 +89,24 @@ async def search_ach_credits(params: AchSearchParams = Depends()):
 
 
 @app.post("/ach")
-async def post_ach_credit(ach_credit: NewAchCredit = Body(NewAchCredit)):
+async def post_ach_credit(ach_credit: NewAchCredit = Body()):
+    await callAPI(API.post_ach_credit, ach_credit)
     return {"msg": "Credit successfully posted"}
 
+@app.post("/ach/batch")
+async def import_ach_credit_from_csv(file: UploadFile):
+    await callAPI(API.bulk_import_from_csv, file)
+    return {"msg": "Credits successfully imported"}
+
+@app.post("/ach/descriptions")
+async def post_description(credit_description: NewCreditDescription = Body()):
+    await callAPI(API.post_description, credit_description)
+    return {"msg": "Credit description added successfully"}
+
+@app.get("/ach/descriptions")
+async def get_descriptions():
+    descriptions = await callAPI(API.get_credit_descriptions)
+    return {"descriptions": descriptions}
 
 if __name__ == "__main__":
     uvicorn.run("routes:app", host="0.0.0.0", port=8000, reload=True)

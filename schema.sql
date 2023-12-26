@@ -54,12 +54,12 @@ DROP TABLE IF EXISTS ach_credits;
 CREATE TABLE IF NOT EXISTS ach_credits (
   id SERIAL PRIMARY KEY,
   amount_in_cents integer,
-  fund text,
+  fund int,
   description text,
   received date,
-  claimed date,
-  roc_id integer REFERENCES rocs,
-  department_id integer REFERENCES departments
+  claimed date DEFAULT NULL,
+  roc_id integer DEFAULT NULL REFERENCES rocs, 
+  department_id integer DEFAULT NULL REFERENCES departments 
 );
 
 DROP TABLE IF EXISTS supporting_docs;
@@ -69,4 +69,13 @@ CREATE TABLE IF NOT EXISTS supporting_docs (
   filename text NOT NULL,
   doc MEDIUMBLOB NOT NULL,
   roc_id integer REFERENCES rocs
+);
+
+DROP TABLE IF EXISTS credit_descriptions;
+
+CREATE TABLE IF NOT EXISTS credit_descriptions (
+  id SERIAL PRIMARY KEY,
+  keywords_array JSON NOT NULL, 
+  fund int NOT NULL,
+  department_id int REFERENCES departments
 );
