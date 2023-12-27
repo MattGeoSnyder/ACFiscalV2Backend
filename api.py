@@ -67,7 +67,7 @@ class API:
         self.cursor = db.cursor
         self.error = MySQLdb.Error
 
-    def signup(self, user):
+    async def signup(self, user):
         # with self.cursor() as cursor:
         #     cursor.execute(
         #         """
@@ -101,7 +101,7 @@ class API:
 
             return {"msg": "User successfully created!"}
 
-    def verify_token(self, form_data):
+    async def verify_token(self, form_data):
         user = API.get_user_by_email(form_data.get("email"))
         if not User:
             raise HTTPException(401, "Unauthorized")
@@ -114,21 +114,21 @@ class API:
         )
         return token
 
-    def get_all_departments(self):
+    async def get_all_departments(self):
         with self.cursor() as cursor:
             cursor.execute("SELECT * FROM departments")
             departments = cursor.fetchall()
 
             return departments
 
-    def get_department_by_id(self, id: int):
+    async def get_department_by_id(self, id: int):
         with self.cursor() as cursor:
             cursor.execute("SELECT * FROM departments WHERE id=%s", (id,))
             department = cursor.fetchone()
 
             return department
 
-    def get_all_users(self) -> List[User]:
+    async def get_all_users(self) -> List[User]:
         with self.cursor() as cursor:
             cursor.execute(
                 "SELECT id, email, first_name, last_name, department_id FROM users;"
@@ -137,7 +137,7 @@ class API:
             users = cursor.fetchall()
             return users
 
-    def get_user_by_id(self, id: int):
+    async def get_user_by_id(self, id: int):
         with self.cursor() as cursor:
             cursor.execute(
                 "SELECT id, email, first_name, last_name, department_id FROM users WHERE id = %s;",
@@ -147,7 +147,7 @@ class API:
 
             return user
 
-    def get_user_by_email(self, email: str):
+    async def get_user_by_email(self, email: str):
         with self.cursor() as cursor:
             cursor.execute(
                 "SELECT id, email, first_name, last_name, department_id FROM users WHERE email = %s;",
@@ -157,7 +157,7 @@ class API:
             user = cursor.fetchone()
             return user
 
-    def search_ach_credits(self, **kwargs):
+    async def search_ach_credits(self, **kwargs):
         query = ""
         params = []
 
@@ -227,7 +227,7 @@ class API:
             ach_credits = cursor.fetchall()
             return ach_credits
 
-    def get_credit_descriptions(self):
+    async def get_credit_descriptions(self):
         with self.cursor() as cursor:
             cursor.execute(
                 """SELECT * FROM credit_descriptions cd JOIN departments d ON cd.department_id = d.id;"""
@@ -236,7 +236,7 @@ class API:
             descriptions = cursor.fetchall()
             return descriptions
 
-    def post_description(self, credit_description: Dict):
+    async def post_description(self, credit_description: Dict):
 
         keywords: str = credit_description["description"].split(",")
         for keyword in keywords:
@@ -251,7 +251,7 @@ class API:
                           (keywords_array, fund, department_id) 
                            """, credit_description.values())
     
-    def post_ach_credit(self, credit: NewAchCredit):
+    async def post_ach_credit(self, credit: NewAchCredit):
         with self.cursor() as cursor:
             cursor.execute("""INSERT INTO ach_credits
                             (amount_in_cents, fund, description, received, claimed, roc_id, department_id) 
