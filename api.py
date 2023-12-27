@@ -7,14 +7,15 @@ from typing import Dict, List
 from dotenv import load_dotenv
 import os
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-from models import User, NewAchCredit
+from models import User, NewAchCredit, NewROC
 import json
-from ach import categorize_credit 
+from ach import categorize_credit
 import csv
 import pdb
 import io
 import math
 from datetime import date
+import pandas
 
 load_dotenv()
 
@@ -237,49 +238,88 @@ class API:
             return descriptions
 
     async def post_description(self, credit_description: Dict):
-
         keywords: str = credit_description["description"].split(",")
         for keyword in keywords:
             keyword.strip()
         keywords_array = json.dumps(keywords)
 
         credit_description["keywords_array"] = keywords_array
-        
+
         with self.cursor as cursor:
-            cursor.execute("""
+            cursor.execute(
+                """
                           INSERT INTO credit_descriptions
                           (keywords_array, fund, department_id) 
-                           """, credit_description.values())
-    
+                           """,
+                credit_description.values(),
+            )
+
     async def post_ach_credit(self, credit: NewAchCredit):
         with self.cursor() as cursor:
-            cursor.execute("""INSERT INTO ach_credits
+            cursor.execute(
+                """INSERT INTO ach_credits
                             (amount_in_cents, fund, description, received, claimed, roc_id, department_id) 
                             VALUES
                             (%s, %s, %s, %s, %s, %s, %s)
-                           """, credit.model_dump().values())
-    
+                           """,
+                credit.model_dump().values(),
+            )
+
     async def bulk_import_from_csv(self, file: UploadFile):
         descriptions = self.get_credit_descriptions()
         # pdb.set_trace()
         bytes_file = file.file.read()
         file_string = bytes_file.decode("utf-8")
         string_file = io.StringIO(file_string)
-        credits = csv.DictReader(string_file, delimiter=',') 
+        credits = csv.DictReader(string_file, delimiter=",")
 
         for credit in credits:
             department_id = categorize_credit(credit, descriptions)
 
             credit_dict = {}
-            credit_dict["amount_in_cents"] =  math.floor(float(credit["Amount"])*100)
-            date_vals = [int(number) for number in credit["AsOfDate"].split('/')]
-            credit_dict["received"] = str(date(date_vals[2], date_vals[0], date_vals[1]))
+            credit_dict["amount_in_cents"] = math.floor(float(credit["Amount"]) * 100)
+            date_vals = [int(number) for number in credit["AsOfDate"].split("/")]
+            credit_dict["received"] = str(
+                date(date_vals[2], date_vals[0], date_vals[1])
+            )
             credit_dict["fund"] = int(credit["AccountName"][-5:])
             credit_dict["description"] = credit["Description"]
             credit_dict["department_id"] = department_id
             new_credit: NewAchCredit = NewAchCredit(**credit_dict)
-            self.post_ach_credit(new_credit)            
-            
+            await self.post_ach_credit(new_credit)
+
+    async def post_roc(self, file: UploadFile, user_id: int = None) -> int:
+        bytes_file = file.file.read()
+        filename = file.filename
+        roc_data = pandas.read_excel(bytes_file)
+        # pdb.set_trace()
+        print(roc_data.iat[5, 8])
+        amount_in_cents = roc_data.iat[5, 8] * 100
+        new_roc = NewROC(
+            roc=bytes_file, filename=filename, amount_in_cents=amount_in_cents
+        )
+        with self.cursor() as cursor:
+            cursor.execute(
+                """
+                INSERT INTO rocs 
+                            (filename, roc, amount_in_cents, user_id)
+                            VALUES (%s, %s, %s, %s);
+                """,
+                (new_roc.model_dump().values()),
+            )
+            roc_id = cursor.lastrowid
+            return roc_id
+
+    async def claim_ach_credit(self, ach_credit_id, roc_id):
+        with self.cursor() as cursor:
+            cursor.execute(
+                """
+                UPDATE ach_credits
+                SET claimed = %s, roc_id = %s
+                WHERE id = %s
+                """,
+                (str(date.today()), roc_id, ach_credit_id),
+            )
 
 
 API = API(db)

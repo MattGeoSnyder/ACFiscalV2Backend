@@ -6,7 +6,15 @@ from api import API
 from typing import Callable, List, Dict, Any
 from pydantic import ValidationError
 from typing_extensions import Annotated
-from models import NewUser, User, Token, TokenRequestForm, AchSearchParams, NewAchCredit, NewCreditDescription
+from models import (
+    NewUser,
+    User,
+    Token,
+    TokenRequestForm,
+    AchSearchParams,
+    NewAchCredit,
+    NewCreditDescription,
+)
 import pdb
 
 app = FastAPI()
@@ -93,20 +101,37 @@ async def post_ach_credit(ach_credit: NewAchCredit = Body()):
     await callAPI(API.post_ach_credit, ach_credit)
     return {"msg": "Credit successfully posted"}
 
+
+@app.patch("/ach")
+async def patch_ach_credit(ach_credit_id: int = Body(), roc_id: int = Body()):
+    await callAPI(API.claim_ach_credit, ach_credit_id, roc_id)
+    return {"msg": "Credit claimed successfully"}
+
+
 @app.post("/ach/batch")
 async def import_ach_credit_from_csv(file: UploadFile):
     await callAPI(API.bulk_import_from_csv, file)
     return {"msg": "Credits successfully imported"}
+
 
 @app.post("/ach/descriptions")
 async def post_description(credit_description: NewCreditDescription = Body()):
     await callAPI(API.post_description, credit_description)
     return {"msg": "Credit description added successfully"}
 
+
 @app.get("/ach/descriptions")
 async def get_descriptions():
     descriptions = await callAPI(API.get_credit_descriptions)
     return {"descriptions": descriptions}
+
+
+@app.post("/roc")
+async def post_roc(roc: UploadFile, user_id: int):
+    roc_id = await callAPI(API.post_roc, roc, user_id)
+    print(roc_id)
+    return {"msg": "ROC posted successfully"}
+
 
 if __name__ == "__main__":
     uvicorn.run("routes:app", host="0.0.0.0", port=8000, reload=True)

@@ -58,10 +58,12 @@ class NewAchCredit(BaseModel):
     roc_id: Union[int, None] = Field(None, gt=0)
     department_id: Union[int, None] = Field(None, gt=0)
 
+
 class NewCreditDescription(BaseModel):
     description: str
     fund: int
     department_id: int
+
 
 class AchSearchParams(BaseModel):
     outstanding: bool
@@ -77,3 +79,11 @@ class AchSearchParams(BaseModel):
     department_id: Union[int, None] = Field(None)
     limit: Union[int, None] = Field()
     skip: int = Field(0, ge=0)
+
+
+class NewROC(BaseModel):
+    filename: str
+    roc: bytes
+    amount_in_cents: int
+    # Need to change default value
+    user_id: int = Field(1)
