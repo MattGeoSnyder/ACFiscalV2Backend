@@ -44,9 +44,10 @@ DROP TABLE IF EXISTS rocs;
 
 CREATE TABLE IF NOT EXISTS rocs (
   id SERIAL PRIMARY KEY,
-  amount_in_cents integer NOT NULL,
+  filename text, 
   roc MEDIUMBLOB NOT NULL,
-  user_id integer REFERENCES users
+  amount_in_cents integer NOT NULL,
+  user_id integer DEFAULT NULL REFERENCES users
 );
 
 DROP TABLE IF EXISTS ach_credits;
