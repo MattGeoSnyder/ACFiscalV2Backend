@@ -59,6 +59,10 @@ class NewAchCredit(BaseModel):
     department_id: Union[int, None] = Field(None, gt=0)
 
 
+class ACHCredit(NewAchCredit):
+    id: int = Field(gt=0)
+
+
 class NewCreditDescription(BaseModel):
     description: str
     fund: int

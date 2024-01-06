@@ -14,6 +14,7 @@ from models import (
     AchSearchParams,
     NewAchCredit,
     NewCreditDescription,
+    ACHCredit,
 )
 import pdb
 
@@ -28,12 +29,14 @@ async def callAPI(
     try:
         return await func(*args, **kwargs)
     except ValidationError as e:
+        print(str(e))
         raise HTTPException(status_code=422, detail=str(e))
     except MySQLdb.Error as e:
+        print(str(e))
         raise HTTPException(status_code=500, detail=str(e))
     except Exception as e:
         # pdb.set_trace()
-        print(dir(e))
+        print(str(e))
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -64,7 +67,7 @@ async def signup(new_user: NewUser = Body()):
 
 @app.get("/departments")
 async def get_all_departments():
-    departments = await callAPI(API.get_all_departments, [])
+    departments = await callAPI(API.get_all_departments)
     return {"departments": departments}
 
 
@@ -108,8 +111,20 @@ async def patch_ach_credit(ach_credit_id: int = Body(), roc_id: int = Body()):
     return {"msg": "Credit claimed successfully"}
 
 
+@app.put("/ach")
+async def update_ach_credit(ach_credit: ACHCredit = Body()):
+    await callAPI(API.update_ach_credit, ach_credit)
+    return {"msg": "Credit successfully updated"}
+
+
+@app.delete("/ach")
+async def delete_ach_credit(credit_id=Body()):
+    await callAPI(API.delete_ach_credit, credit_id)
+    return {"msg": "Credit successfully deleted"}
+
+
 @app.post("/ach/batch")
-async def import_ach_credit_from_csv(file: UploadFile):
+async def import_ach_credits_from_csv(file: UploadFile):
     await callAPI(API.bulk_import_from_csv, file)
     return {"msg": "Credits successfully imported"}
 

@@ -168,22 +168,26 @@ class API:
             query += "SELECT * FROM ach_credits WHERE claimed IS NOT NULL "
 
         if kwargs["amount_lb"] and kwargs["amount_ub"]:
-            query += "AND amount BETWEEN %s AND %s "
+            query += "AND amount_in_cents BETWEEN %s AND %s "
             params.append(kwargs["amount_lb"])
             params.append(kwargs["amount_ub"])
         elif kwargs["amount_lb"]:
-            query += "AND amount > %s "
+            query += "AND amount_in_cents >= %s "
             params.append(kwargs["amount_lb"])
         elif kwargs["amount_ub"]:
-            query += "AND amount < %s "
+            query += "AND amount_in_cents <= %s "
 
         if kwargs["fund"]:
             query += "AND fund = %s "
             params.append(kwargs["fund"])
 
         if kwargs["description"]:
-            query += "AND description ILIKE %s "
-            params.append(kwargs["description"])
+            query += "AND description LIKE %s "
+            key_words: List[str] = [
+                key_word.strip() for key_word in kwargs["description"].split(",")
+            ]
+            description = "%" + "%".join(key_words) + "%"
+            params.append(description)
 
         if kwargs["received_lb"] and kwargs["received_ub"]:
             query += "AND received BETWEEN %s AND %s "
@@ -215,11 +219,12 @@ class API:
             query += "AND department_id = %s "
             params.append(kwargs["department_id"])
 
+        query += "ORDER BY received DESC, amount_in_cents DESC "
         if kwargs["skip"]:
             query += "SKIP %s "
             params.append(kwargs["skip"])
 
-        query += "LIMIT %s"
+        query += "LIMIT %s;"
         params.append(kwargs["limit"])
 
         with self.cursor() as cursor:
@@ -265,6 +270,33 @@ class API:
                 credit.model_dump().values(),
             )
 
+    async def update_ach_credit(self, credit_data):
+        with self.cursor() as cursor:
+            cursor.execute(
+                """
+                UPDATE ach_credits SET 
+                    fund = %s, description = %s, received = %s, claimed = %s, department_id = %s
+                WHERE id = %s
+                """,
+                (
+                    credit_data["fund"],
+                    credit_data["description"],
+                    credit_data["received"],
+                    credit_data["claimed"],
+                    credit_data["department_id"],
+                    credit_data["id"],
+                ),
+            )
+
+    async def delete_ach_credit(self, credit_id):
+        with self.cursor() as cursor:
+            cursor.execute(
+                """
+                DELETE FROM ach_credits WHERE id = %s
+                """,
+                (credit_id,),
+            )
+
     async def bulk_import_from_csv(self, file: UploadFile):
         descriptions = self.get_credit_descriptions()
         # pdb.set_trace()
@@ -288,7 +320,7 @@ class API:
             new_credit: NewAchCredit = NewAchCredit(**credit_dict)
             await self.post_ach_credit(new_credit)
 
-    async def post_roc(self, file: UploadFile, user_id: int = None) -> int:
+    async def post_roc(self, file: UploadFile, user_id: int = 1) -> int:
         bytes_file = file.file.read()
         filename = file.filename
         roc_data = pandas.read_excel(bytes_file)
@@ -296,7 +328,10 @@ class API:
         print(roc_data.iat[5, 8])
         amount_in_cents = roc_data.iat[5, 8] * 100
         new_roc = NewROC(
-            roc=bytes_file, filename=filename, amount_in_cents=amount_in_cents
+            roc=bytes_file,
+            filename=filename,
+            amount_in_cents=amount_in_cents,
+            user_id=user_id,
         )
         with self.cursor() as cursor:
             cursor.execute(
@@ -316,7 +351,7 @@ class API:
                 """
                 UPDATE ach_credits
                 SET claimed = %s, roc_id = %s
-                WHERE id = %s
+                WHERE id = %s;
                 """,
                 (str(date.today()), roc_id, ach_credit_id),
             )
