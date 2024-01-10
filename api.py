@@ -79,7 +79,7 @@ class API:
         #     )
 
         #     existing_user = cursor.fetchone()
-        existing_user = self.get_user_by_id(user.get("id"))
+        existing_user = await self.get_user_by_email(user.get("email"))
 
         if existing_user:
             raise HTTPException(
@@ -99,8 +99,14 @@ class API:
                 """,
                 new_user.values(),
             )
+            id = cursor.lastrowid
+            token = create_access_token(data={
+                "id": id,
+                "email": user.get('email'),
+                "department_id": user.get('department_id')
+            })
 
-            return {"msg": "User successfully created!"}
+            return token 
 
     async def verify_token(self, form_data):
         user = API.get_user_by_email(form_data.get("email"))

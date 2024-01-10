@@ -1,4 +1,6 @@
-from fastapi import FastAPI, Path, HTTPException, Depends, Body, Form, UploadFile
+from fastapi import FastAPI, Path, HTTPException, Depends, Body, Form, UploadFile, Request
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import PlainTextResponse, JSONResponse
 from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
 import MySQLdb
 import uvicorn
@@ -28,17 +30,33 @@ async def callAPI(
 ) -> Dict[str, Any]:
     try:
         return await func(*args, **kwargs)
-    except ValidationError as e:
-        print(str(e))
-        raise HTTPException(status_code=422, detail=str(e))
+    except HTTPException as e:
+        raise e
     except MySQLdb.Error as e:
         print(str(e))
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) 
     except Exception as e:
         # pdb.set_trace()
-        print(str(e))
         raise HTTPException(status_code=500, detail=str(e))
 
+# @app.middleware("http")
+# async def debug_request(request: Request, call_next):
+#     body = await request.body()
+#     print(body)
+#     try:
+#         response = await call_next(request)
+#         return response
+#     except Exception as e:
+#         print(str(e))
+#         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc):
+    body = await request.body()
+    print(body)
+    print(str(exc))
+    return PlainTextResponse(str(exc), status_code=422)
 
 @app.get("/")
 async def root():
@@ -56,13 +74,15 @@ async def get_access_token(
     password: str = Form(examples=["secret1234"]),
 ):
     token = await callAPI(API.verify_token, {"email": email, "password": password})
-    return {"token": token, "token_type": "bearer"}
+    return JSONResponse(status_code=201, content={"token": token, "token_type": "bearer"})
 
 
 @app.post("/signup")
 async def signup(new_user: NewUser = Body()):
-    await callAPI(API.signup, new_user.model_dump())
-    return {"msg": "User created successfully"}
+    print(new_user)
+    new_user
+    token = await callAPI(API.signup, new_user.model_dump())
+    return { "token": token, "token_type": "bearer" } 
 
 
 @app.get("/departments")
