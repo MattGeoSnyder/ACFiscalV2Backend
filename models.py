@@ -10,13 +10,13 @@ class Token(BaseModel):
 
 
 class TokenRequestForm(BaseModel):
-    email: str = Form(
+    email: str = Annotated[str, Form(
         max_length=75,
         pattern=r"[a-z,A-Z]+.[a-z,A-Z]+@alleghenycounty.us$",
         description="Must use Allegheny County email. Email must be less than 75 characters long.",
         examples=["Matthew.Snyder@alleghenycounty.us"],
-    )
-    password: str = Form(examples=["secret1234"])
+    )]
+    password: str = Annotated[str, Form(examples=["secret1234"])]
 
 
 class NewUser(BaseModel):
@@ -31,17 +31,17 @@ class NewUser(BaseModel):
     password: str = Field(examples=["secret1234"])
     department_id: int = Field(gt=0, examples=[1])
 
-    # model_config = {
-    #     "examples": [
-    #         {
-    #             "first_name": "Matthew",
-    #             "last_name": "Snyder",
-    #             "email": "Matthew.Snyder@alleghenycounty.us",
-    #             "password": "secret1234",
-    #             "department_id": 1,
-    #         }
-    #     ]
-    # }
+    model_config = {
+        "examples": [
+            {
+                "first_name": "Matthew",
+                "last_name": "Snyder",
+                "email": "Matthew.Snyder@alleghenycounty.us",
+                "password": "secret1234",
+                "department_id": 1,
+            }
+        ]
+    }
 
 
 class User(NewUser):
