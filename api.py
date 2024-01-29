@@ -4,6 +4,7 @@ import MySQLdb
 from passlib.context import CryptContext
 from jose import JWTError, jwt
 from typing import Dict, List
+from enum import Enum
 from dotenv import load_dotenv
 import os
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
@@ -22,13 +23,44 @@ load_dotenv()
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
+class Table(Enum):
+    USER = "users"
+    DEPARTMENTS = "departments"
+    ACH = "ach_credits"
+    ROC = "rocs"
+
+
+class CRUDModel: 
+    def __init__(self, tablename: str, db):
+        self.tablename = tablename
+        self.db = db
+        self.cursor = db.cursor()
+
+    def set_table(self, tablename):
+        self.tablename = tablename
+        return self
+
+    def add(self, **args):
+        keys = args.keys()
+        values = args.values()
+        keys_tuple = f"({', '.join(keys)})"
+        values_tuple = f"({', '.join(['%s' for _ in range(len(values))])})"
+        query = f"""
+            INSERT INTO {self.tablename}
+            {keys_tuple}
+            VALUES
+            {values_tuple};
+            """
+        with self.cursor as cursor:
+            cursor.execute(query, (*values,))
+
 
 def verify_password(plain_password: str, hashed_password: str):
     return pwd_context.verify(plain_password, hashed_password)
 
 
-def get_password_hash(password: str):
-    return pwd_context.hash(password)
+
+
 
 
 def create_access_token(data: Dict):

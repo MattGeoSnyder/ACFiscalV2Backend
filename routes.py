@@ -4,7 +4,7 @@ from fastapi.responses import PlainTextResponse, JSONResponse
 from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
 import MySQLdb
 import uvicorn
-from api import API
+from api import API, CRUDModel
 from typing import Callable, List, Dict, Any
 from pydantic import ValidationError
 from typing_extensions import Annotated
@@ -25,6 +25,9 @@ app = FastAPI()
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
+
+user_model = CRUDModel
+user_model.add(username="MattgeoSnyder", password="test1234")
 
 async def callAPI(
     func: Callable, *args: List, **kwargs: Dict[str, Any]
