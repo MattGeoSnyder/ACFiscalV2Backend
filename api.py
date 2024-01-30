@@ -54,6 +54,33 @@ class CRUDModel:
         with self.cursor as cursor:
             cursor.execute(query, (*values,))
 
+    def get_by_id(self, id: int, *cols: (str)):
+        f_cols = ', '.join(cols)
+        query = f"""
+            SELECT {f_cols} FROM {self.tablename}
+            WHERE id = %s;""" 
+        with self.cursor as cursor:
+            cursor.execute(query, (id, ))
+            item = cursor.fetchone()
+            return item
+
+    def update_by_id(self, id, **new_vals):
+        keys_tup = ', '.join([f'{key} = %s' for key in new_vals.keys()])
+        values_tup = new_vals.values()
+        query = f"""
+            UPDATE {self.tablename}
+            SET {keys_tup}
+            WHERE id = %s"""
+        with self.cursor as cursor:
+            cursor.execute(query, (*values_tup, id, ))
+
+    def delete_by_id(self, id):
+        query = f"""
+            DELETE FROM {self.tablename}
+            WHERE id = %s"""
+        with self.cursor as cursor:
+            cursor.execute(query, (id, ))
+
 
 def verify_password(plain_password: str, hashed_password: str):
     return pwd_context.verify(plain_password, hashed_password)
@@ -93,12 +120,10 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
         raise HTTPException(401, "Unauthorized")
     return user
 
+class UserModel(CRUDModel):
 
-class API:
     def __init__(self, db):
-        self.db = db
-        self.cursor = db.cursor
-        self.error = MySQLdb.Error
+        super('users', db)
 
     async def signup(self, user):
         # with self.cursor() as cursor:
@@ -152,6 +177,14 @@ class API:
             }
         )
         return token
+
+
+class API:
+    def __init__(self, db):
+        self.db = db
+        self.cursor = db.cursor
+        self.error = MySQLdb.Error
+
 
     async def get_all_departments(self):
         with self.cursor() as cursor:
