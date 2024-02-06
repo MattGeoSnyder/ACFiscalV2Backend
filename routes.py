@@ -1,10 +1,10 @@
-from fastapi import FastAPI, Path, HTTPException, Depends, Body, Form, UploadFile, Request
+from fastapi import FastAPI, Path, HTTPException, Depends, Body, Form, UploadFile, Request, Query
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import PlainTextResponse, JSONResponse
 from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
 import MySQLdb
 import uvicorn
-from api import API, CRUDModel
+from api import API, crud_model, user_model, credits_model
 from typing import Callable, List, Dict, Any
 from pydantic import ValidationError
 from typing_extensions import Annotated
@@ -24,10 +24,6 @@ import pdb
 app = FastAPI()
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
-
-
-user_model = CRUDModel
-user_model.add(username="MattgeoSnyder", password="test1234")
 
 async def callAPI(
     func: Callable, *args: List, **kwargs: Dict[str, Any]
@@ -81,21 +77,20 @@ async def get_access_token(
     ),
     password: str = Form(examples=["secret1234"]),
 ):
-    token = await callAPI(API.verify_token, {"email": email, "password": password})
+    token = await callAPI(user_model.verify_token, {"email": email, "password": password})
     return token
 
 
 @app.post("/signup", status_code=201, tags=[Tags.auth])
 async def signup(new_user: Annotated[NewUser, Body]):
-    print(new_user)
-    new_user
-    token = await callAPI(API.signup, new_user.model_dump())
+    token = await callAPI(user_model.signup, new_user.model_dump())
     return { "token": token, "token_type": "bearer" } 
 
 
 @app.get("/departments", tags=[Tags.departments])
 async def get_all_departments():
-    departments = await callAPI(API.get_all_departments)
+    crud_model.set_table("departments") 
+    departments = await callAPI(crud_model.get_all_paginated, 0, 100)
     return {"departments": departments}
 
 
@@ -103,13 +98,18 @@ async def get_all_departments():
 async def get_department_by_id(
     department_id: Annotated[int, Path(title="The id of the department to get", gt=0)]
 ):
-    department = await callAPI(API.get_department_by_id, department_id)
+    crud_model.set_table("departments")
+    department = await callAPI(crud_model.get_by_id, department_id)
     return {"department": department}
 
 
 @app.get("/users", tags=[Tags.users])
-async def get_users():
-    users = await callAPI(API.get_all_users)
+async def get_users(
+    offset: Annotated[int, Query],
+    limit: Annotated[int, Query]
+    
+):
+    users = await callAPI(user_model.get_all_paginated, offset, limit)
     return {"users": users}
 
 
@@ -117,19 +117,19 @@ async def get_users():
 async def get_user_by_id(
     user_id: Annotated[int, Path(title="The id of the user to get")]
 ):
-    user = await callAPI(API.get_user_by_id, user_id)
+    user = await callAPI(user_model.get_by_id, user_id)
     return {"user": user}
 
 
 @app.get("/ach", tags=[Tags.ach_credits])
 async def search_ach_credits(params: AchSearchParams = Depends()):
-    ach_credits = await callAPI(API.search_ach_credits, **params.model_dump())
+    ach_credits = await callAPI(credits_model.search_ach_credits, **params.model_dump())
     return {"ach_credits": ach_credits}
 
 
 @app.post("/ach", tags=[Tags.ach_credits])
 async def post_ach_credit(ach_credit: NewAchCredit = Body()):
-    await callAPI(API.post_ach_credit, ach_credit)
+    await callAPI(credits_model.add, ach_credit)
     return {"msg": "Credit successfully posted"}
 
 
@@ -141,13 +141,13 @@ async def patch_ach_credit(ach_credit_id: int = Body(), roc_id: int = Body()):
 
 @app.put("/ach", tags=[Tags.ach_credits])
 async def update_ach_credit(ach_credit: ACHCredit = Body()):
-    await callAPI(API.update_ach_credit, ach_credit)
+    await callAPI(credits_model.update_by_id, ach_credit)
     return {"msg": "Credit successfully updated"}
 
 
 @app.delete("/ach", tags=[Tags.ach_credits])
 async def delete_ach_credit(credit_id=Body()):
-    await callAPI(API.delete_ach_credit, credit_id)
+    await callAPI(credits_model.delete_by_id, credit_id)
     return {"msg": "Credit successfully deleted"}
 
 
