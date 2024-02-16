@@ -1,16 +1,22 @@
 import re
 from typing import List
+from api import crud_model
+
+crud_model.set_table('departments')
+
 
 def is_credit(credit):
     return credit['Transaction'] == "ACH Credits"
 
-def categorize_credit(credit, descriptions):
+async def categorize_credit(credit, descriptions, departments):
     department_id = None 
     if credit.get("AccountName"):
         if credit.get("AccountName")[-5:] == "11108":
-            department_id = 16
+            kane_dept = departments.filter(lambda dept: dept.name == "Kane")[0]
+            department_id = kane_dept.id 
         elif credit.get("AccountName")[-5:] == "11106":
-            department_id = 9
+            econ_dept = departments.filter(lambda dept: dept.name == "Economic Development")[0]
+            department_id = econ_dept.id
     else:
         for description in descriptions:
             keywords_arr: List[str] = description["keywords_array"]
