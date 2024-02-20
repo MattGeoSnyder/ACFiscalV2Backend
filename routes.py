@@ -7,6 +7,7 @@ from fastapi import (
     Form,
     UploadFile,
     Request,
+    Query,
 )
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import PlainTextResponse, JSONResponse
