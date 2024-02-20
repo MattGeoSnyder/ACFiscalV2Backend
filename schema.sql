@@ -36,8 +36,9 @@ CREATE TABLE IF NOT EXISTS users (
   last_name varchar(25) NOT NULL,
   email varchar(75) NOT NULL UNIQUE,
   password text NOT NULL,
-  auth boolean DEFAULT false,
-  department_id integer REFERENCES departments
+  department_id integer REFERENCES departments,
+  permitted boolean DEFAULT false,
+  role varchar(25) DEFAULT 'user'
 );
 
 DROP TABLE IF EXISTS rocs;

@@ -23,6 +23,7 @@ load_dotenv()
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
+
 class Table(Enum):
     USER = "users"
     DEPARTMENTS = "departments"
@@ -30,7 +31,7 @@ class Table(Enum):
     ROC = "rocs"
 
 
-class CRUDModel: 
+class CRUDModel:
     def __init__(self, tablename: str, db):
         self.tablename = tablename
         self.db = db
@@ -55,39 +56,41 @@ class CRUDModel:
             cursor.execute(query, (*values,))
 
     def get_by_id(self, id: int, *cols: (str)):
-        f_cols = ', '.join(cols)
+        f_cols = ", ".join(cols)
         query = f"""
             SELECT {f_cols} FROM {self.tablename}
-            WHERE id = %s;""" 
+            WHERE id = %s;"""
         with self.cursor as cursor:
-            cursor.execute(query, (id, ))
+            cursor.execute(query, (id,))
             item = cursor.fetchone()
             return item
 
     def update_by_id(self, id, **new_vals):
-        keys_tup = ', '.join([f'{key} = %s' for key in new_vals.keys()])
+        keys_tup = ", ".join([f"{key} = %s" for key in new_vals.keys()])
         values_tup = new_vals.values()
         query = f"""
             UPDATE {self.tablename}
             SET {keys_tup}
             WHERE id = %s"""
         with self.cursor as cursor:
-            cursor.execute(query, (*values_tup, id, ))
+            cursor.execute(
+                query,
+                (
+                    *values_tup,
+                    id,
+                ),
+            )
 
     def delete_by_id(self, id):
         query = f"""
             DELETE FROM {self.tablename}
             WHERE id = %s"""
         with self.cursor as cursor:
-            cursor.execute(query, (id, ))
+            cursor.execute(query, (id,))
 
 
 def verify_password(plain_password: str, hashed_password: str):
     return pwd_context.verify(plain_password, hashed_password)
-
-
-
-
 
 
 def create_access_token(data: Dict):
@@ -120,10 +123,11 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
         raise HTTPException(401, "Unauthorized")
     return user
 
+
 class UserModel(CRUDModel):
 
     def __init__(self, db):
-        super('users', db)
+        super("users", db)
 
     async def signup(self, user):
         # with self.cursor() as cursor:
@@ -157,13 +161,15 @@ class UserModel(CRUDModel):
                 new_user.values(),
             )
             id = cursor.lastrowid
-            token = create_access_token(data={
-                "id": id,
-                "email": user.get('email'),
-                "department_id": user.get('department_id')
-            })
+            token = create_access_token(
+                data={
+                    "id": id,
+                    "email": user.get("email"),
+                    "department_id": user.get("department_id"),
+                }
+            )
 
-            return token 
+            return token
 
     async def verify_token(self, form_data):
         user = API.get_user_by_email(form_data.get("email"))
@@ -172,8 +178,8 @@ class UserModel(CRUDModel):
         token = create_access_token(
             data={
                 "id": user.get("id"),
-                "email": user.get("email"),
                 "department_id": user.get("department_id"),
+                "role": user.get("role"),
             }
         )
         return token
@@ -184,7 +190,6 @@ class API:
         self.db = db
         self.cursor = db.cursor
         self.error = MySQLdb.Error
-
 
     async def get_all_departments(self):
         with self.cursor() as cursor:

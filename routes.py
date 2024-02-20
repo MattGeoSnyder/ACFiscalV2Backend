@@ -1,4 +1,13 @@
-from fastapi import FastAPI, Path, HTTPException, Depends, Body, Form, UploadFile, Request
+from fastapi import (
+    FastAPI,
+    Path,
+    HTTPException,
+    Depends,
+    Body,
+    Form,
+    UploadFile,
+    Request,
+)
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import PlainTextResponse, JSONResponse
 from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
@@ -26,9 +35,6 @@ app = FastAPI()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 
-user_model = CRUDModel
-user_model.add(username="MattgeoSnyder", password="test1234")
-
 async def callAPI(
     func: Callable, *args: List, **kwargs: Dict[str, Any]
 ) -> Dict[str, Any]:
@@ -38,10 +44,11 @@ async def callAPI(
         raise e
     except MySQLdb.Error as e:
         print(str(e))
-        raise HTTPException(500, str(e)) 
+        raise HTTPException(500, str(e))
     except Exception as e:
         # pdb.set_trace()
         raise HTTPException(500, str(e))
+
 
 # @app.middleware("http")
 # async def debug_request(request: Request, call_next):
@@ -59,12 +66,14 @@ async def callAPI(
 async def validation_exception_handler(request: Request, exc):
     return JSONResponse(exc["detail"]["msg"], status_code=422)
 
+
 class Tags(Enum):
     auth = "Authentication"
     users = "Users"
     departments = "Departments"
     ach_credits = "ACH Credits"
     rocs = "ROCs"
+
 
 @app.get("/")
 async def root():
@@ -90,7 +99,7 @@ async def signup(new_user: Annotated[NewUser, Body]):
     print(new_user)
     new_user
     token = await callAPI(API.signup, new_user.model_dump())
-    return { "token": token, "token_type": "bearer" } 
+    return {"token": token, "token_type": "bearer"}
 
 
 @app.get("/departments", tags=[Tags.departments])

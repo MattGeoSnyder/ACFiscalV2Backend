@@ -2,6 +2,7 @@ from typing import Union
 from typing_extensions import Annotated
 from pydantic import BaseModel, Field
 from fastapi import Form
+from enum import Enum
 
 
 class Token(BaseModel):
@@ -10,12 +11,15 @@ class Token(BaseModel):
 
 
 class TokenRequestForm(BaseModel):
-    email: str = Annotated[str, Form(
-        max_length=75,
-        pattern=r"[a-z,A-Z]+.[a-z,A-Z]+@alleghenycounty.us$",
-        description="Must use Allegheny County email. Email must be less than 75 characters long.",
-        examples=["Matthew.Snyder@alleghenycounty.us"],
-    )]
+    email: str = Annotated[
+        str,
+        Form(
+            max_length=75,
+            pattern=r"[a-z,A-Z]+.[a-z,A-Z]+@alleghenycounty.us$",
+            description="Must use Allegheny County email. Email must be less than 75 characters long.",
+            examples=["Matthew.Snyder@alleghenycounty.us"],
+        ),
+    ]
     password: str = Annotated[str, Form(examples=["secret1234"])]
 
 
@@ -44,9 +48,25 @@ class NewUser(BaseModel):
     }
 
 
+class Role(Enum):
+    USER = "user"
+    ADMIN = "admin"
+
+
+print(Role.USER)
+
+
 class User(NewUser):
     id: int = Field(gt=0)
     password: str = Field(exclude=True)
+    role: Role = Field(default=Role.USER)
+
+
+class UserPermissions(BaseModel):
+    id: int = Field(gt=0)
+    permitted: bool
+    role: Role
+    department: str
 
 
 class NewAchCredit(BaseModel):
@@ -89,5 +109,10 @@ class NewROC(BaseModel):
     filename: str
     roc: bytes
     amount_in_cents: int
-    # Need to change default value
+    # TODO: Need to change default value
+
     user_id: int = Field(1)
+
+
+class Test:
+    role: Role
