@@ -35,10 +35,6 @@ app = FastAPI()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 
-user_model = CRUDModel
-user_model.add(username="MattgeoSnyder", password="test1234")
-
-
 async def callAPI(
     func: Callable, *args: List, **kwargs: Dict[str, Any]
 ) -> Dict[str, Any]:
