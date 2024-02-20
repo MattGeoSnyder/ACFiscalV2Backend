@@ -35,13 +35,13 @@ class CRUDModel:
     def __init__(self, tablename: str, db):
         self.tablename = tablename
         self.db = db
-        self.cursor = db.cursor()
+        self.cursor = db.cursor
 
     def set_table(self, tablename):
         self.tablename = tablename
         return self
 
-    def add(self, **args):
+    async def add(self, **args):
         keys = args.keys()
         values = args.values()
         keys_tuple = f"({', '.join(keys)})"
@@ -52,27 +52,35 @@ class CRUDModel:
             VALUES
             {values_tuple};
             """
-        with self.cursor as cursor:
+        with self.cursor() as cursor:
             cursor.execute(query, (*values,))
 
-    def get_by_id(self, id: int, *cols: (str)):
+    async def get_by_id(self, id: int, *cols: (str)):
         f_cols = ", ".join(cols)
         query = f"""
             SELECT {f_cols} FROM {self.tablename}
             WHERE id = %s;"""
-        with self.cursor as cursor:
+        with self.cursor() as cursor:
             cursor.execute(query, (id,))
             item = cursor.fetchone()
             return item
 
-    def update_by_id(self, id, **new_vals):
+    async def get_all_paginated(self, offset=0, limit=20):
+        query = f"""SELECT * FROM {self.tablename}
+            LIMIT %s OFFSET %s"""
+        with self.cursor() as cursor:
+            cursor.execute(query, (limit, offset))
+            items = cursor.fetchall()
+            return items
+
+    async def update_by_id(self, id, **new_vals):
         keys_tup = ", ".join([f"{key} = %s" for key in new_vals.keys()])
         values_tup = new_vals.values()
         query = f"""
             UPDATE {self.tablename}
             SET {keys_tup}
             WHERE id = %s"""
-        with self.cursor as cursor:
+        with self.cursor() as cursor:
             cursor.execute(
                 query,
                 (
@@ -81,16 +89,20 @@ class CRUDModel:
                 ),
             )
 
-    def delete_by_id(self, id):
+    async def delete_by_id(self, id):
         query = f"""
             DELETE FROM {self.tablename}
             WHERE id = %s"""
-        with self.cursor as cursor:
+        with self.cursor() as cursor:
             cursor.execute(query, (id,))
 
 
 def verify_password(plain_password: str, hashed_password: str):
     return pwd_context.verify(plain_password, hashed_password)
+
+
+def get_password_hash(password: str):
+    return pwd_context.hash(password)
 
 
 def create_access_token(data: Dict):
@@ -127,7 +139,7 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
 class UserModel(CRUDModel):
 
     def __init__(self, db):
-        super("users", db)
+        super().__init__("users", db)
 
     async def signup(self, user):
         # with self.cursor() as cursor:
@@ -172,7 +184,7 @@ class UserModel(CRUDModel):
             return token
 
     async def verify_token(self, form_data):
-        user = API.get_user_by_email(form_data.get("email"))
+        user = self.get_user_by_email(form_data.get("email"))
         if not User:
             raise HTTPException(401, "Unauthorized")
         token = create_access_token(
@@ -183,6 +195,106 @@ class UserModel(CRUDModel):
             }
         )
         return token
+
+    async def get_user_by_id(self, id: int):
+        with self.cursor() as cursor:
+            cursor.execute(
+                "SELECT id, email, first_name, last_name, department_id FROM users WHERE id = %s;",
+                (id,),
+            )
+            user = cursor.fetchone()
+
+            return user
+
+    async def get_user_by_email(self, email: str):
+        with self.cursor() as cursor:
+            cursor.execute(
+                "SELECT id, email, first_name, last_name, department_id FROM users WHERE email = %s;",
+                (email,),
+            )
+
+            user = cursor.fetchone()
+            return user
+
+
+class ACH_Credits(CRUDModel):
+    def __init__(self, db):
+        super().__init__("ach_credits", db)
+
+    async def search_ach_credits(self, **kwargs):
+        query = ""
+        params = []
+
+        if kwargs["outstanding"]:
+            query += "SELECT * FROM ach_credits WHERE claimed IS NULL "
+        else:
+            query += "SELECT * FROM ach_credits WHERE claimed IS NOT NULL "
+
+        if kwargs["amount_lb"] and kwargs["amount_ub"]:
+            query += "AND amount_in_cents BETWEEN %s AND %s "
+            params.append(kwargs["amount_lb"])
+            params.append(kwargs["amount_ub"])
+        elif kwargs["amount_lb"]:
+            query += "AND amount_in_cents >= %s "
+            params.append(kwargs["amount_lb"])
+        elif kwargs["amount_ub"]:
+            query += "AND amount_in_cents <= %s "
+
+        if kwargs["fund"]:
+            query += "AND fund = %s "
+            params.append(kwargs["fund"])
+
+        if kwargs["description"]:
+            query += "AND description LIKE %s "
+            key_words: List[str] = [
+                key_word.strip() for key_word in kwargs["description"].split(",")
+            ]
+            description = "%" + "%".join(key_words) + "%"
+            params.append(description)
+
+        if kwargs["received_lb"] and kwargs["received_ub"]:
+            query += "AND received BETWEEN %s AND %s "
+            params.append(kwargs["received_lb"])
+            params.append(kwargs["received_ub"])
+        elif kwargs["received_lb"]:
+            query += "AND received > %s "
+            params.append(kwargs["received_lb"])
+        elif kwargs["received_ub"]:
+            query += "AND received < %s "
+            params.append(kwargs["received_ub"])
+
+        if kwargs["claimed_lb"] and kwargs["claimed_ub"]:
+            query += "AND claimed BETWEEN %s AND %s "
+            params.append(kwargs["claimed_lb"])
+            params.append(kwargs["claimed_ub"])
+        elif kwargs["claimed_lb"]:
+            query += "AND claimed > %s "
+            params.append(kwargs["claimed_lb"])
+        elif kwargs["claimed_ub"]:
+            query += "AND claimed < %s "
+            params.append(kwargs["claimed_ub"])
+
+        if kwargs["roc_id"]:
+            query += "AND roc_id = %s "
+            params.append(kwargs["roc_id"])
+
+        if kwargs["department_id"]:
+            query += "AND department_id = %s "
+            params.append(kwargs["department_id"])
+
+        query += "ORDER BY received DESC, amount_in_cents DESC "
+        if kwargs["skip"]:
+            query += "SKIP %s "
+            params.append(kwargs["skip"])
+
+        query += "LIMIT %s;"
+        params.append(kwargs["limit"])
+
+        with self.cursor() as cursor:
+            cursor.execute(query, (*params,))
+
+            ach_credits = cursor.fetchall()
+            return ach_credits
 
 
 class API:
@@ -434,3 +546,6 @@ class API:
 
 
 API = API(db)
+crud_model = CRUDModel("", db)
+user_model = UserModel(db)
+credits_model = ACH_Credits(db)
