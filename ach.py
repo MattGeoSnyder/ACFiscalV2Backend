@@ -13,7 +13,6 @@ def categorize_credit(credit, descriptions):
             department_id = 16
         elif credit.get("AccountName")[-5:] == "11106":
             department_id = 9
-
     else:
         for description in descriptions:
             keywords_arr: List[str] = description["keywords_array"]

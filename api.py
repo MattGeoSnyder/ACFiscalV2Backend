@@ -488,13 +488,14 @@ class API:
     async def bulk_import_from_csv(self, file: UploadFile):
         descriptions = self.get_credit_descriptions()
         # pdb.set_trace()
+        departments = await self.get_all_departments()
         bytes_file = file.file.read()
         file_string = bytes_file.decode("utf-8")
         string_file = io.StringIO(file_string)
         credits = csv.DictReader(string_file, delimiter=",")
 
         for credit in credits:
-            department_id = categorize_credit(credit, descriptions)
+            department_id = categorize_credit(credit, descriptions, departments)
 
             credit_dict = {}
             credit_dict["amount_in_cents"] = math.floor(float(credit["Amount"]) * 100)
