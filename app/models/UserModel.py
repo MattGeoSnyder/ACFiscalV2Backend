@@ -115,11 +115,13 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
 
 class UserModel(CRUDModel):
 
-    def __init__(self, db):
-        super().__init__("users", db)
+    _tablename = "users"
 
-    async def signup(self, user):
-        # with self.cursor() as cursor:
+    def __init__(self):
+        super().__init__("users")
+
+    async def signup(user):
+        # with cursor() as cursor:
         #     cursor.execute(
         #         """
         #             SELECT * FROM users
@@ -129,7 +131,7 @@ class UserModel(CRUDModel):
         #     )
 
         #     existing_user = cursor.fetchone()
-        existing_user = await self.get_user_by_email(user.get("email"))
+        existing_user = await UserModel.get_user_by_email(user.get("email"))
 
         if existing_user:
             raise HTTPException(
@@ -139,7 +141,7 @@ class UserModel(CRUDModel):
         hashed_password = get_password_hash(user["password"])
         new_user = {**user, "password": hashed_password}
 
-        with self.cursor() as cursor:
+        with UserModel._cursor as cursor:
             cursor.execute(
                 """
                     INSERT INTO users
@@ -160,8 +162,8 @@ class UserModel(CRUDModel):
 
             return token
 
-    async def verify_token(self, form_data):
-        user = self.get_user_by_email(form_data.get("email"))
+    async def verify_token(form_data):
+        user = UserModel.get_user_by_email(form_data.get("email"))
         if not user:
             raise HTTPException(401, "Unauthorized")
         token = create_access_token(
@@ -174,7 +176,7 @@ class UserModel(CRUDModel):
         return token
 
     async def get_user_by_id(self, id: int):
-        with self.cursor() as cursor:
+        with UserModel._cursor() as cursor:
             cursor.execute(
                 "SELECT id, email, first_name, last_name, department_id FROM users WHERE id = %s;",
                 (id,),
@@ -184,7 +186,7 @@ class UserModel(CRUDModel):
             return user
 
     async def get_user_by_email(self, email: str):
-        with self.cursor() as cursor:
+        with UserModel._cursor() as cursor:
             cursor.execute(
                 "SELECT id, email, first_name, last_name, department_id FROM users WHERE email = %s;",
                 (email,),

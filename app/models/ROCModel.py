@@ -12,12 +12,14 @@ class NewROC(BaseModel):
 
 
 class ROCModel(CRUDModel):
-    def __init__(self, db):
-        super().__init__("rocs", db)
+    _tablename = "rocs"
+
+    def __init__(self):
+        super().__init__()
 
     @staticmethod
-    async def post_roc(self, roc, user_id):
-        with self.cursor() as cursor:
+    async def post_roc(roc, user_id):
+        with cursor() as cursor:
             cursor.execute(
                 """
                     INSERT INTO rocs

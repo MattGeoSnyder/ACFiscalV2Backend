@@ -1,5 +1,5 @@
 from .CRUDModel import CRUDModel
-from typing import List, Union
+from typing import List, Union, Dict
 import csv
 import re
 import io
@@ -7,6 +7,7 @@ from datetime import date
 import math
 from pydantic import BaseModel, Field
 from fastapi import UploadFile
+import json
 
 
 class NewAchCredit(BaseModel):
@@ -30,8 +31,10 @@ class NewCreditDescription(BaseModel):
 
 
 class ACHModel(CRUDModel):
-    def __init__(self, db):
-        super().__init__("ach_credits", db)
+    _tablename = "ach_credits"
+
+    def __init__(self):
+        super().__init__()
 
     @staticmethod
     def is_credit(credit):
@@ -56,7 +59,7 @@ class ACHModel(CRUDModel):
         return department_id
 
     @staticmethod
-    async def search_ach_credits(self, **kwargs):
+    async def search_ach_credits(**kwargs):
         query = ""
         params = []
 
@@ -125,15 +128,43 @@ class ACHModel(CRUDModel):
         query += "LIMIT %s;"
         params.append(kwargs["limit"])
 
-        with self.cursor() as cursor:
+        with ACHModel._cursor() as cursor:
             cursor.execute(query, (*params,))
 
             ach_credits = cursor.fetchall()
             return ach_credits
 
     @staticmethod
-    async def bulk_import_from_csv(self, file: UploadFile):
-        descriptions = self.get_credit_descriptions()
+    async def get_credit_descriptions():
+        with ACHModel._cursor() as cursor:
+            cursor.execute(
+                """SELECT * FROM credit_descriptions cd JOIN departments d ON cd.department_id = d.id;"""
+            )
+
+            descriptions = cursor.fetchall()
+            return descriptions
+
+    @staticmethod
+    async def post_description(credit_description: Dict):
+        keywords: str = credit_description["description"].split(",")
+        for keyword in keywords:
+            keyword.strip()
+        keywords_array = json.dumps(keywords)
+
+        credit_description["keywords_array"] = keywords_array
+
+        with ACHModel._cursor() as cursor:
+            cursor.execute(
+                """
+                          INSERT INTO credit_descriptions
+                          (keywords_array, fund, department_id) 
+                           """,
+                credit_description.values(),
+            )
+
+    @staticmethod
+    async def bulk_import_from_csv(file: UploadFile):
+        descriptions = ACHModel.get_credit_descriptions()
         # pdb.set_trace()
         bytes_file = file.file.read()
         file_string = bytes_file.decode("utf-8")
@@ -141,7 +172,7 @@ class ACHModel(CRUDModel):
         credits = csv.DictReader(string_file, delimiter=",")
 
         for credit in credits:
-            department_id = self.categorize_credit(credit, descriptions)
+            department_id = ACHModel.categorize_credit(credit, descriptions)
 
             credit_dict = {}
             credit_dict["amount_in_cents"] = math.floor(float(credit["Amount"]) * 100)
@@ -153,4 +184,4 @@ class ACHModel(CRUDModel):
             credit_dict["description"] = credit["Description"]
             credit_dict["department_id"] = department_id
             new_credit: NewAchCredit = NewAchCredit(**credit_dict)
-            await self.post_ach_credit(new_credit)
+            await ACHModel.post_ach_credit(new_credit)
