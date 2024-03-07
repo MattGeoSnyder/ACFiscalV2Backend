@@ -80,3 +80,17 @@ CREATE TABLE IF NOT EXISTS credit_descriptions (
   fund int NOT NULL,
   department_id int REFERENCES departments
 );
+
+DROP TABLE IF EXISTS roc_descriptions;
+
+CREATE TABLE IF NOT EXISTS roc_descriptions (
+  id SERIAL PRIMARY KEY,
+  roc_id REFERENCES rocs,
+  mcu TEXT NOT NULL,
+  cost_center TEXT NOT NULL,
+  object_number TEXT NOT NULL,
+  subsidiary TEXT,
+  subledger TEXT,
+  explanation TEXT NOT NULL
+) 
+
