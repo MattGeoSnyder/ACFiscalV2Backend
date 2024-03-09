@@ -7,6 +7,7 @@ from fastapi import (
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from fastapi.security import OAuth2PasswordBearer
+from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 from typing import Callable, List, Dict, Any
 from typing_extensions import Annotated
@@ -36,12 +37,24 @@ callAPI = callAPI.callAPI
 #         print(str(e))
 #         raise HTTPException(status_code=500, detail=str(e))
 
-
 app = FastAPI()
 app.include_router(ach_router)
 app.include_router(auth_router)
 app.include_router(roc_router)
 app.include_router(user_router)
+
+origins = [
+    "http://localhost:3000",
+    "https://localhost:3000",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 @app.exception_handler(RequestValidationError)
@@ -64,7 +77,7 @@ async def root():
 
 @app.get("/departments", tags=[Tags.departments])
 async def get_all_departments():
-    CRUDModel.set_table("departments")
+    CRUDModel.tablename = "departments"
     departments = await callAPI(CRUDModel.get_all_paginated, 0, 100)
     return {"departments": departments}
 

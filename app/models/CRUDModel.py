@@ -12,7 +12,7 @@ class CRUDModel:
 
     @tablename.setter
     def tablename(self, new_tablename: str):
-        self._tablename = new_tablename
+        self.tablename = new_tablename
 
     @staticmethod
     async def add(**args):
@@ -30,21 +30,21 @@ class CRUDModel:
             cursor.execute(query, (*values,))
 
     @staticmethod
-    async def get_by_id(CRUDModel, id: int, *cols: (str)):
+    async def get_by_id(id: int, *cols: (str)):
         f_cols = ", ".join(cols)
         query = f"""
-            SELECT {f_cols} FROM {CRUDModel._tablename}
+            SELECT {f_cols} FROM {CRUDModel.tablename}
             WHERE id = %s;"""
-        with cursor() as cursor:
+        with CRUDModel._cursor() as cursor:
             cursor.execute(query, (id,))
             item = cursor.fetchone()
             return item
 
     @staticmethod
-    async def get_all_paginated(CRUDModel, offset=0, limit=20):
-        query = f"""SELECT * FROM {CRUDModel._tablename}
+    async def get_all_paginated(offset=0, limit=20):
+        query = f"""SELECT * FROM {CRUDModel.tablename}
             LIMIT %s OFFSET %s"""
-        with cursor() as cursor:
+        with CRUDModel._cursor() as cursor:
             cursor.execute(query, (limit, offset))
             items = cursor.fetchall()
             return items
@@ -57,7 +57,7 @@ class CRUDModel:
             UPDATE {CRUDModel._tablename}
             SET {keys_tup}
             WHERE id = %s"""
-        with cursor() as cursor:
+        with CRUDModel._cursor() as cursor:
             cursor.execute(
                 query,
                 (
@@ -71,5 +71,5 @@ class CRUDModel:
         query = f"""
             DELETE FROM {CRUDModel._tablename}
             WHERE id = %s"""
-        with cursor() as cursor:
+        with CRUDModel._cursor() as cursor:
             cursor.execute(query, (id,))
