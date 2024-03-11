@@ -26,16 +26,6 @@ roc_router = roc.roc_router
 user_router = users.user_router
 callAPI = callAPI.callAPI
 
-# @app.middleware("http")
-# async def debug_request(request: Request, call_next):
-#     body = await request.body()
-#     print(body)
-#     try:
-#         response = await call_next(request)
-#         return response
-#     except Exception as e:
-#         print(str(e))
-#         raise HTTPException(status_code=500, detail=str(e))
 
 app = FastAPI()
 app.include_router(ach_router)
@@ -59,7 +49,17 @@ app.add_middleware(
 
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc):
-    return JSONResponse(exc["detail"]["msg"], status_code=422)
+    print(exc)
+
+
+@app.middleware("http")
+async def debug_request(request: Request, call_next):
+    try:
+        response = await call_next(request)
+        return response
+    except Exception as e:
+        print(str(e))
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 class Tags(Enum):
