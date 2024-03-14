@@ -92,5 +92,6 @@ CREATE TABLE IF NOT EXISTS roc_descriptions (
   subsidiary TEXT,
   subledger TEXT,
   explanation TEXT NOT NULL
+  amount_in_cents integer NOT NULL
 ) 
 
