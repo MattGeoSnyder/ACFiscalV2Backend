@@ -45,7 +45,6 @@ DROP TABLE IF EXISTS rocs;
 
 CREATE TABLE IF NOT EXISTS rocs (
   id SERIAL PRIMARY KEY,
-  filename text, 
   amount_in_cents integer NOT NULL,
   user_id integer DEFAULT NULL REFERENCES users
 );
@@ -83,15 +82,16 @@ CREATE TABLE IF NOT EXISTS credit_descriptions (
 
 DROP TABLE IF EXISTS roc_descriptions;
 
+--TODO: CHANGE TABLE TO roc_lineitems
 CREATE TABLE IF NOT EXISTS roc_descriptions (
   id SERIAL PRIMARY KEY,
-  roc_id REFERENCES rocs,
+  roc_id int REFERENCES rocs,
   mcu TEXT NOT NULL,
   cost_center TEXT NOT NULL,
   object_number TEXT NOT NULL,
   subsidiary TEXT,
   subledger TEXT,
-  explanation TEXT NOT NULL
+  explanation TEXT NOT NULL,
   amount_in_cents integer NOT NULL
 ) 
 
