@@ -135,6 +135,18 @@ class ACHModel(CRUDModel):
             return ach_credits
 
     @staticmethod
+    async def post_ach_credit(credit: NewAchCredit):
+        with ACHModel._cursor() as cursor:
+            cursor.execute(
+                """INSERT INTO ach_credits
+                            (amount_in_cents, fund, description, received, claimed, roc_id, department_id) 
+                            VALUES
+                            (%s, %s, %s, %s, %s, %s, %s)
+                            """,
+                credit.model_dump().values(),
+            )
+
+    @staticmethod
     async def get_credit_descriptions():
         with ACHModel._cursor() as cursor:
             cursor.execute(

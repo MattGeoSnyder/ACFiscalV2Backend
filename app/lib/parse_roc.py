@@ -15,13 +15,11 @@ async def parse_roc(roc: UploadFile):
     df = read_excel(f)
     array = df.values
     trimmed = array[table_start_row_index:]
-    print(trimmed)
     for i in range(len(trimmed)):
         if math.isnan(trimmed[i][total_cooridiates[1]]):
             break
 
         row = trimmed[i][1:]
-        print(row)
 
         line_item = {
             "mcu": row[1],
