@@ -52,14 +52,14 @@ async def validation_exception_handler(request: Request, exc):
     print(exc)
 
 
-@app.middleware("http")
-async def debug_request(request: Request, call_next):
-    try:
-        response = await call_next(request)
-        return response
-    except Exception as e:
-        print(str(e))
-        raise HTTPException(status_code=500, detail=str(e))
+# @app.middleware("http")
+# async def debug_request(request: Request, call_next):
+#     try:
+#         response = await call_next(request)
+#         return response
+#     except Exception as e:
+#         print(str(e))
+#         raise HTTPException(status_code=500, detail=str(e))
 
 
 class Tags(Enum):

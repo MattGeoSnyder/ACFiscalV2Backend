@@ -11,8 +11,6 @@ db = MySQLdb.connect(
     passwd=os.getenv("DB_PASSWORD"),
     db=os.getenv("DB_NAME"),
     autocommit=True,
-    ssl_mode="VERIFY_IDENTITY",
-    ssl={"ca": "/etc/ssl/certs/ca-certificates.crt"},
     cursorclass=Cursors.DictCursor,
 )
 

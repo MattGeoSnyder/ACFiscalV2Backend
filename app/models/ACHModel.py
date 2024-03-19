@@ -176,7 +176,7 @@ class ACHModel(CRUDModel):
 
     @staticmethod
     async def bulk_import_from_csv(file: UploadFile):
-        descriptions = ACHModel.get_credit_descriptions()
+        descriptions = await ACHModel.get_credit_descriptions()
         # pdb.set_trace()
         bytes_file = file.file.read()
         file_string = bytes_file.decode("utf-8")
