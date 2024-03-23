@@ -89,3 +89,14 @@ class ROCModel(CRUDModel):
             print(e)
             ROCModel._cursor().execute("ROLLBACK;")
             raise e
+
+    @staticmethod
+    async def get_roc_by_id(roc_id: int):
+        with ROCModel._cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT * FROM rocs WHERE id = %s
+                """,
+                (roc_id,),
+            )
+            return cursor.fetchone()
