@@ -77,6 +77,7 @@ class ACHModel(CRUDModel):
             params.append(kwargs["amount_lb"])
         elif kwargs["amount_ub"]:
             query += "AND amount_in_cents <= %s "
+            params.append(kwargs["amount_ub"])
 
         if kwargs["fund"]:
             query += "AND fund = %s "
