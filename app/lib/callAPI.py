@@ -14,6 +14,5 @@ async def callAPI(
         print(str(e))
         raise HTTPException(500, str(e))
     except Exception as e:
-        # pdb.set_trace()
         print(str(e))
         raise HTTPException(500, str(e))

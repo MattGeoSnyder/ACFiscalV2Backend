@@ -7,28 +7,12 @@ from typing_extensions import Annotated
 from jose import JWTError, jwt
 from typing import Dict
 from enum import Enum
+from .TokenModel import TokenModel
 import os
 
+
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
-
-
-class Token(BaseModel):
-    token: str
-    token_type: str
-
-
-class TokenRequestForm(BaseModel):
-    email: str = Annotated[
-        str,
-        Form(
-            max_length=75,
-            pattern=r"[a-z,A-Z]+.[a-z,A-Z]+@alleghenycounty.us$",
-            description="Must use Allegheny County email. Email must be less than 75 characters long.",
-            examples=["Matthew.Snyder@alleghenycounty.us"],
-        ),
-    ]
-    password: str = Annotated[str, Form(examples=["secret1234"])]
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/token")
 
 
 class NewUser(BaseModel):
@@ -56,21 +40,14 @@ class NewUser(BaseModel):
     }
 
 
-class Role(Enum):
-    USER = "user"
-    ADMIN = "admin"
-
-
 class User(NewUser):
     id: int = Field(gt=0)
     password: str = Field(exclude=True)
-    role: Role = Field(default=Role.USER)
+    scope = Field(default="user")
 
 
 class UserPermissions(BaseModel):
     id: int = Field(gt=0)
-    permitted: bool
-    role: Role
     department: str
 
 
@@ -80,14 +57,6 @@ def verify_password(plain_password: str, hashed_password: str):
 
 def get_password_hash(password: str):
     return pwd_context.hash(password)
-
-
-def create_access_token(data: Dict):
-    to_encode = data.copy()
-    encoded_jwt = jwt.encode(
-        to_encode, os.getenv("SECRET_KEY"), algorithm=os.getenv("ALGORITHM")
-    )
-    return encoded_jwt
 
 
 def authenticate_user(email: str, password: str):
@@ -102,8 +71,8 @@ def authenticate_user(email: str, password: str):
 def get_current_user(token: str = Depends(oauth2_scheme)):
     try:
         payload = jwt.decode(token, os.getenv("SECRET_KEY"), os.getenv("ALGORITHM"))
-        email: str = payload.get("email")
-        if email is None:
+        username: str = payload.get("email")
+        if username is None:
             raise HTTPException(401, "Unauthorized")
     except JWTError:
         raise HTTPException(401, "Unauthorized")
@@ -120,6 +89,7 @@ class UserModel(CRUDModel):
     def __init__(self):
         super().__init__("users")
 
+    @staticmethod
     async def signup(user):
         # with cursor() as cursor:
         #     cursor.execute(
@@ -152,30 +122,18 @@ class UserModel(CRUDModel):
                 new_user.values(),
             )
             id = cursor.lastrowid
-            token = create_access_token(
+            token = TokenModel.create_access_token(
                 data={
                     "id": id,
-                    "email": user.get("email"),
                     "department_id": user.get("department_id"),
+                    "scope": user.get("scope"),
                 }
             )
 
-            return token
+            return {"acess_token": token, "token_type": "bearer"}
 
-    async def verify_token(form_data):
-        user = UserModel.get_user_by_email(form_data.get("email"))
-        if not user:
-            raise HTTPException(401, "Unauthorized")
-        token = create_access_token(
-            data={
-                "id": user.get("id"),
-                "department_id": user.get("department_id"),
-                "role": user.get("role"),
-            }
-        )
-        return token
-
-    async def get_user_by_id(self, id: int):
+    @staticmethod
+    async def get_user_by_id(id: int):
         with UserModel._cursor() as cursor:
             cursor.execute(
                 "SELECT id, email, first_name, last_name, department_id FROM users WHERE id = %s;",
@@ -185,7 +143,8 @@ class UserModel(CRUDModel):
 
             return user
 
-    async def get_user_by_email(self, email: str):
+    @staticmethod
+    async def get_user_by_email(email: str):
         with UserModel._cursor() as cursor:
             cursor.execute(
                 "SELECT id, email, first_name, last_name, department_id FROM users WHERE email = %s;",
@@ -194,3 +153,17 @@ class UserModel(CRUDModel):
 
             user = cursor.fetchone()
             return user
+
+    @staticmethod
+    async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
+        try:
+            payload = jwt.decode(token, os.getenv("SECRET_KEY"), os.getenv("ALGORITHM"))
+            email: str = payload.get("email")
+            if email is None:
+                raise HTTPException(401, "Unauthorized")
+        except JWTError:
+            raise HTTPException(401, "Unauthorized")
+        user = UserModel.get_user_by_email(email)
+        if user is None:
+            raise HTTPException(401, "Unauthorized")
+        return user
