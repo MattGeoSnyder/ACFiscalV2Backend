@@ -24,24 +24,6 @@ roc_router = roc.roc_router
 user_router = users.user_router
 callAPI = callAPI.callAPI
 
-
-def swagger_monkey_patch(*args, **kwargs):
-    """
-    Wrap the function which is generating the HTML for the /docs endpoint and
-    overwrite the default values for the swagger js and css.
-    """
-    return get_swagger_ui_html(
-        *args,
-        **kwargs,
-        swagger_js_url="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.9.0/swagger-ui-bundle.js",
-        swagger_css_url="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.9.0/swagger-ui.css"
-    )
-
-
-# Actual monkey patch
-applications.get_swagger_ui_html = swagger_monkey_patch
-
-
 app = FastAPI()
 app.include_router(ach_router)
 app.include_router(auth_router)
@@ -64,6 +46,8 @@ app.add_middleware(
 
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc):
+    request_body = await request.body()
+    print(request_body)
     print(exc)
 
 

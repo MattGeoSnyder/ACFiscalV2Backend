@@ -10,7 +10,6 @@ from enum import Enum
 from .TokenModel import TokenModel
 import os
 
-
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/token")
 
@@ -27,17 +26,17 @@ class NewUser(BaseModel):
     password: str = Field(examples=["secret1234"])
     department_id: int = Field(gt=0, examples=[1])
 
-    model_config = {
-        "examples": [
-            {
-                "first_name": "Matthew",
-                "last_name": "Snyder",
-                "email": "Matthew.Snyder@alleghenycounty.us",
-                "password": "secret1234",
-                "department_id": 1,
-            }
-        ]
-    }
+    # model_config = {
+    #     "examples": [
+    #         {
+    #             "first_name": "Matthew",
+    #             "last_name": "Snyder",
+    #             "email": "Matthew.Snyder@alleghenycounty.us",
+    #             "password": "secret1234",
+    #             "department_id": 1,
+    #         }
+    #     ]
+    # }
 
 
 class User(NewUser):
@@ -89,8 +88,8 @@ class UserModel(CRUDModel):
     def __init__(self):
         super().__init__("users")
 
-    @staticmethod
-    async def signup(user):
+    @classmethod
+    async def signup(cls, user):
         # with cursor() as cursor:
         #     cursor.execute(
         #         """
@@ -101,7 +100,8 @@ class UserModel(CRUDModel):
         #     )
 
         #     existing_user = cursor.fetchone()
-        existing_user = await UserModel.get_user_by_email(user.get("email"))
+        print(user)
+        existing_user = await cls.get_user_by_email(user.get("email"))
 
         if existing_user:
             raise HTTPException(
@@ -111,7 +111,7 @@ class UserModel(CRUDModel):
         hashed_password = get_password_hash(user["password"])
         new_user = {**user, "password": hashed_password}
 
-        with UserModel._cursor as cursor:
+        with cls._cursor() as cursor:
             cursor.execute(
                 """
                     INSERT INTO users

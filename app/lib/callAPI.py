@@ -9,6 +9,7 @@ async def callAPI(
     try:
         return await func(*args, **kwargs)
     except HTTPException as e:
+        print(str(e))
         raise e
     except MySQLdb.Error as e:
         print(str(e))

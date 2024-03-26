@@ -30,7 +30,7 @@ oauth2_scheme = OAuth2PasswordBearer(
 
 class Token(BaseModel):
     access_token: str
-    token_type: str
+    type: str
 
 
 class TokenData(BaseModel):
@@ -72,7 +72,7 @@ class TokenModel(CRUDModel):
                 "scope": user.get("scope"),
             }
         )
-        return {"acess_token": token, "token_type": "bearer"}
+        return token
 
     @staticmethod
     async def decode_token(token: str = Depends(oauth2_scheme)):

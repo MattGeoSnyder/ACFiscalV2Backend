@@ -37,8 +37,7 @@ CREATE TABLE IF NOT EXISTS users (
   email varchar(75) NOT NULL UNIQUE,
   password text NOT NULL,
   department_id integer REFERENCES departments,
-  permitted boolean DEFAULT false,
-  role varchar(25) DEFAULT 'user'
+  scope varchar(200) DEFAULT 'user'
 );
 
 DROP TABLE IF EXISTS rocs;
@@ -82,7 +81,6 @@ CREATE TABLE IF NOT EXISTS credit_descriptions (
 
 DROP TABLE IF EXISTS roc_descriptions;
 
---TODO: CHANGE TABLE TO roc_lineitems
 CREATE TABLE IF NOT EXISTS roc_descriptions (
   id SERIAL PRIMARY KEY,
   roc_id int REFERENCES rocs,
@@ -93,5 +91,5 @@ CREATE TABLE IF NOT EXISTS roc_descriptions (
   subledger TEXT,
   explanation TEXT NOT NULL,
   amount_in_cents integer NOT NULL
-) 
+); 
 

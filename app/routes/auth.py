@@ -3,10 +3,12 @@ from fastapi import (
     Form,
     Body,
 )
+from typing import Dict
 from typing_extensions import Annotated
 from ..models.UserModel import UserModel, NewUser
 from ..lib.callAPI import callAPI
 from ..models.TokenModel import TokenModel, Token
+from pydantic import BaseModel
 
 auth_router = APIRouter(tags=["Auth"])
 
@@ -29,7 +31,7 @@ async def get_access_token(
         TokenModel.verify_token,
         {"username": username, "password": password, "scope": scope},
     )
-    return token
+    return {"access_token": token, "type": "bearer"}
 
 
 @auth_router.post(
@@ -37,7 +39,5 @@ async def get_access_token(
     status_code=201,
 )
 async def signup(new_user: Annotated[NewUser, Body]):
-    print(new_user)
-    new_user
-    token = await callAPI(UserModel.signup, new_user.model_dump())
-    return {"token": token, "token_type": "bearer"}
+    token = await callAPI(UserModel.signup, new_user.dict())
+    return {"access_token": token, "type": "bearer"}
