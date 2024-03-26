@@ -50,87 +50,12 @@ class UserPermissions(BaseModel):
     department: str
 
 
-def verify_password(plain_password: str, hashed_password: str):
-    return pwd_context.verify(plain_password, hashed_password)
-
-
-def get_password_hash(password: str):
-    return pwd_context.hash(password)
-
-
-def authenticate_user(email: str, password: str):
-    user = UserModel.get_user_by_email(email).get("user")
-    if not user:
-        return False
-    if not verify_password(password, user.get("password")):
-        return False
-    return user
-
-
-def get_current_user(token: str = Depends(oauth2_scheme)):
-    try:
-        payload = jwt.decode(token, os.getenv("SECRET_KEY"), os.getenv("ALGORITHM"))
-        username: str = payload.get("email")
-        if username is None:
-            raise HTTPException(401, "Unauthorized")
-    except JWTError:
-        raise HTTPException(401, "Unauthorized")
-    user = UserModel.get_user_by_id(payload.get("id"))
-    if user is None:
-        raise HTTPException(401, "Unauthorized")
-    return user
-
-
 class UserModel(CRUDModel):
 
     _tablename = "users"
 
     def __init__(self):
         super().__init__("users")
-
-    @classmethod
-    async def signup(cls, user):
-        # with cursor() as cursor:
-        #     cursor.execute(
-        #         """
-        #             SELECT * FROM users
-        #             WHERE email = %s;
-        #         """,
-        #         (user["email"],),
-        #     )
-
-        #     existing_user = cursor.fetchone()
-        print(user)
-        existing_user = await cls.get_user_by_email(user.get("email"))
-
-        if existing_user:
-            raise HTTPException(
-                409, f"Account already registered with email {user['email']}"
-            )
-
-        hashed_password = get_password_hash(user["password"])
-        new_user = {**user, "password": hashed_password}
-
-        with cls._cursor() as cursor:
-            cursor.execute(
-                """
-                    INSERT INTO users
-                    (first_name, last_name, email, password, department_id)
-                    VALUES
-                    (%s, %s, %s, %s, %s);
-                """,
-                new_user.values(),
-            )
-            id = cursor.lastrowid
-            token = TokenModel.create_access_token(
-                data={
-                    "id": id,
-                    "department_id": user.get("department_id"),
-                    "scope": user.get("scope"),
-                }
-            )
-
-            return {"acess_token": token, "token_type": "bearer"}
 
     @staticmethod
     async def get_user_by_id(id: int):

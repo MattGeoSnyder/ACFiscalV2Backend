@@ -48,6 +48,9 @@ class TokenModel(CRUDModel):
         )
         return encoded_jwt
 
+    def get_password_hash(password: str):
+        return pwd_context.hash(password)
+
     @staticmethod
     async def get_user_by_email(email: str):
         with TokenModel._cursor() as cursor:
@@ -59,15 +62,19 @@ class TokenModel(CRUDModel):
             user = cursor.fetchone()
             return user
 
-    @staticmethod
+    @classmethod
     # here username is email
-    async def verify_token(form_data):
+    async def verify_token(cls, form_data):
+        print(form_data)
         user = await TokenModel.get_user_by_email(form_data.get("username"))
         if not user:
-            raise HTTPException(401, "Unauthorized")
+            raise HTTPException(401, "Unauthorized from verify_token")
         token = TokenModel.create_access_token(
             data={
                 "id": user.get("id"),
+                "username": form_data.get(
+                    "username"
+                ),  # changed from "id": user.get("id"),
                 "department_id": user.get("department_id"),
                 "scope": user.get("scope"),
             }
@@ -76,14 +83,49 @@ class TokenModel(CRUDModel):
 
     @staticmethod
     async def decode_token(token: str = Depends(oauth2_scheme)):
+        print(token)
         try:
             payload = jwt.decode(token, os.getenv("SECRET_KEY"), os.getenv("ALGORITHM"))
+            print(payload)
             username: str = payload.get("username")
             if username is None:
-                raise HTTPException(401, "Unauthorized")
+                raise HTTPException(401, "Unauthorized username is None")
         except JWTError:
-            raise HTTPException(401, "Unauthorized")
+            raise HTTPException(401, "Unauthorized JWT error")
         user = await TokenModel.get_user_by_email(payload.get("username"))
         if user is None:
-            raise HTTPException(401, "Unauthorized")
+            raise HTTPException(401, "Unauthorized couldn't get user")
         return payload
+
+    @classmethod
+    async def signup(cls, user):
+        existing_user = await cls.get_user_by_email(user.get("email"))
+
+        if existing_user:
+            raise HTTPException(
+                409, f"Account already registered with email {user['email']}"
+            )
+
+        hashed_password = cls.get_password_hash(user["password"])
+        new_user = {**user, "password": hashed_password}
+
+        with cls._cursor() as cursor:
+            cursor.execute(
+                """
+                    INSERT INTO users
+                    (first_name, last_name, email, password, department_id)
+                    VALUES
+                    (%s, %s, %s, %s, %s);
+                """,
+                new_user.values(),
+            )
+            id = cursor.lastrowid
+            token = TokenModel.create_access_token(
+                data={
+                    "id": id,
+                    "department_id": user.get("department_id"),
+                    "scope": user.get("scope"),
+                }
+            )
+
+            return {"acess_token": token, "token_type": "bearer"}
