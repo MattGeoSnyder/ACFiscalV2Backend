@@ -6,7 +6,6 @@ from dotenv import load_dotenv
 from fastapi import Depends, FastAPI, HTTPException, Security, status
 from fastapi.security import (
     OAuth2PasswordBearer,
-    OAuth2PasswordRequestForm,
     SecurityScopes,
 )
 from jose import JWTError, jwt
@@ -36,7 +35,7 @@ class Token(BaseModel):
 class TokenData(BaseModel):
     id: int
     department_id: int
-    scope: str
+    scope: List[str]
 
 
 class TokenModel(CRUDModel):
@@ -72,29 +71,45 @@ class TokenModel(CRUDModel):
         token = TokenModel.create_access_token(
             data={
                 "id": user.get("id"),
-                "username": form_data.get(
-                    "username"
-                ),  # changed from "id": user.get("id"),
+                "username": form_data.get("username"),
                 "department_id": user.get("department_id"),
-                "scope": user.get("scope"),
+                "scope": user.get("scope", "").split(" "),
             }
         )
         return token
 
     @staticmethod
-    async def decode_token(token: str = Depends(oauth2_scheme)):
-        print(token)
+    async def decode_token(
+        security_scopes: SecurityScopes, token: str = Depends(oauth2_scheme)
+    ):
+        if security_scopes.scopes:
+            authenticate_value = f'Bearer scope="{security_scopes.scope_str}"'
+        else:
+            authenticate_value = "Bearer"
+        credentials_exception = HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not validate credentials",
+            headers={"WWW-Authenticate": authenticate_value},
+        )
         try:
             payload = jwt.decode(token, os.getenv("SECRET_KEY"), os.getenv("ALGORITHM"))
-            print(payload)
             username: str = payload.get("username")
+            token_scopes = payload.get("scope", [])
+            print(token_scopes)
             if username is None:
-                raise HTTPException(401, "Unauthorized username is None")
+                raise credentials_exception
         except JWTError:
-            raise HTTPException(401, "Unauthorized JWT error")
+            raise credentials_exception
         user = await TokenModel.get_user_by_email(payload.get("username"))
         if user is None:
-            raise HTTPException(401, "Unauthorized couldn't get user")
+            raise credentials_exception
+        for scope in security_scopes.scopes:
+            if scope not in token_scopes:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Not enough permissions",
+                    headers={"WWW-Authenticate": authenticate_value},
+                )
         return payload
 
     @classmethod

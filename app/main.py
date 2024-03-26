@@ -1,6 +1,6 @@
 from fastapi import applications
 from fastapi.openapi.docs import get_swagger_ui_html
-from fastapi import FastAPI, Path, HTTPException, Request, Depends
+from fastapi import FastAPI, Path, HTTPException, Request, Depends, Security
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from fastapi.security import OAuth2PasswordBearer
@@ -70,7 +70,11 @@ class Tags(Enum):
 
 
 @app.get("/")
-async def root(tokenData: Annotated[TokenData, Depends(TokenModel.decode_token)]):
+async def root(
+    tokenData: Annotated[
+        TokenData, Security(TokenModel.decode_token, scopes=["admin"])
+    ],
+):
     print(tokenData)
     return {"message": "Hello World"}
 
