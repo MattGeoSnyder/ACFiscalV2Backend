@@ -78,7 +78,7 @@ async def root(
 
 @app.get("/departments", tags=[Tags.departments])
 async def get_all_departments():
-    CRUDModel.tablename = "departments"
+    CRUDModel._tablename = "departments"
     departments = await callAPI(CRUDModel.get_all_paginated, 0, 100)
     return {"departments": departments}
 
