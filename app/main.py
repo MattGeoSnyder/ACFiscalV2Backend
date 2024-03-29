@@ -1,5 +1,4 @@
 from fastapi import applications
-from fastapi.openapi.docs import get_swagger_ui_html
 from fastapi import FastAPI, Path, HTTPException, Request, Depends, Security
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
@@ -25,15 +24,13 @@ user_router = users.user_router
 callAPI = callAPI.callAPI
 
 app = FastAPI()
+
 app.include_router(ach_router)
 app.include_router(auth_router)
 app.include_router(roc_router)
 app.include_router(user_router)
 
-origins = [
-    "http://localhost:3000",
-    "https://localhost:3000",
-]
+origins = ["*"]
 
 app.add_middleware(
     CORSMiddleware,

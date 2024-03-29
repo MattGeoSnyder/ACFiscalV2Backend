@@ -39,5 +39,5 @@ async def get_access_token(
     status_code=201,
 )
 async def signup(new_user: Annotated[NewUser, Body]):
-    token = await callAPI(TokenModel.signup, new_user.dict())
+    token = await callAPI(TokenModel.signup, new_user.model_dump())
     return {"access_token": token, "type": "bearer"}

@@ -42,7 +42,7 @@ class NewUser(BaseModel):
 class User(NewUser):
     id: int = Field(gt=0)
     password: str = Field(exclude=True)
-    scope = Field(default="user")
+    scope: str = Field(default="user")
 
 
 class UserPermissions(BaseModel):
