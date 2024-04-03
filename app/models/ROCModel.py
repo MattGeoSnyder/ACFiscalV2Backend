@@ -3,7 +3,7 @@ from pydantic import BaseModel, Field
 from fastapi import UploadFile
 from typing import List, Union
 from datetime import datetime
-from ..lib.parse_roc import parse_roc
+from lib.parse_roc import parse_roc
 import pdb
 
 

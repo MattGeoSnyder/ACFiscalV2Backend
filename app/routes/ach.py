@@ -1,10 +1,10 @@
 from fastapi import APIRouter, Depends, Body, UploadFile, Query, Security, Form
-from ..lib.callAPI import callAPI
-from ..models.ACHModel import ACHModel, NewAchCredit, ACHCredit, NewCreditDescription
+from lib.callAPI import callAPI
+from models.ACHModel import ACHModel, NewAchCredit, ACHCredit, NewCreditDescription
 from pydantic import BaseModel, Field
 from typing import Union
 from typing_extensions import Annotated
-from ..models.TokenModel import TokenModel, TokenData
+from models.TokenModel import TokenModel, TokenData
 
 ach_router = APIRouter(prefix="/ach", tags=["ACH Credits"])
 

@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, Body, UploadFile, Form
-from ..models.ROCModel import ROCModel
-from ..lib.callAPI import callAPI
+from models.ROCModel import ROCModel
+from lib.callAPI import callAPI
 from typing import List, Union, Any
 from typing_extensions import Annotated
 

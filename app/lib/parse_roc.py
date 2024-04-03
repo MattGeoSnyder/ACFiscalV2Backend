@@ -3,7 +3,7 @@ from csv import reader
 from pandas import ExcelFile, read_excel
 from pdb import set_trace
 from .constants import total_cooridiates, table_start_row_index
-from ..models.ROCLineItemModel import NewROCLineItem
+from models.ROCLineItemModel import NewROCLineItem
 from pydantic import BaseModel, ValidationError
 import math
 

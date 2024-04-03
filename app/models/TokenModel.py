@@ -54,7 +54,7 @@ class TokenModel(CRUDModel):
     async def get_user_by_email(email: str):
         with TokenModel._cursor() as cursor:
             cursor.execute(
-                "SELECT id, email, first_name, last_name, department_id FROM users WHERE email = %s;",
+                "SELECT id, email, first_name, last_name, department_id, scope FROM users WHERE email = %s;",
                 (email,),
             )
 
@@ -63,20 +63,19 @@ class TokenModel(CRUDModel):
 
     @classmethod
     # here username is email
-    async def verify_token(cls, form_data):
+    async def verify_credentials(cls, form_data):
         print(form_data)
         user = await TokenModel.get_user_by_email(form_data.get("username"))
         if not user:
             raise HTTPException(401, "Unauthorized from verify_token")
-        token = TokenModel.create_access_token(
-            data={
-                "id": user.get("id"),
-                "username": form_data.get("username"),
-                "department_id": user.get("department_id"),
-                "scope": user.get("scope", "").split(" "),
-            }
-        )
-        return token
+        print(user)
+        payload = {
+            "username": form_data.get("username"),
+            "department_id": user.get("department_id"),
+            "scope": user.get("scope", ""),
+        }
+        token = TokenModel.create_access_token(data={"id": user.get("id"), **payload})
+        return {"token": token, "payload": payload}
 
     @staticmethod
     async def decode_token(
@@ -86,15 +85,17 @@ class TokenModel(CRUDModel):
             authenticate_value = f'Bearer scope="{security_scopes.scope_str}"'
         else:
             authenticate_value = "Bearer"
-        credentials_exception = HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Could not validate credentials",
-            headers={"WWW-Authenticate": authenticate_value},
-        )
+            credentials_exception = HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Could not validate credentials",
+                headers={"WWW-Authenticate": authenticate_value},
+            )
         try:
             payload = jwt.decode(token, os.getenv("SECRET_KEY"), os.getenv("ALGORITHM"))
             username: str = payload.get("username")
-            token_scopes = payload.get("scope", [])
+            token_scopes = payload.get("scope", "")
+
+            print(payload)
             print(token_scopes)
             if username is None:
                 raise credentials_exception
@@ -143,4 +144,4 @@ class TokenModel(CRUDModel):
                 }
             )
 
-            return {"acess_token": token, "token_type": "bearer"}
+            return {"access_token": token, "token_type": "bearer"}

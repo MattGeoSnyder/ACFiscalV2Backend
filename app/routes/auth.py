@@ -5,17 +5,17 @@ from fastapi import (
 )
 from typing import Dict
 from typing_extensions import Annotated
-from ..models.UserModel import UserModel, NewUser
-from ..lib.callAPI import callAPI
-from ..models.TokenModel import TokenModel, Token
+from models.UserModel import UserModel, NewUser
+from lib.callAPI import callAPI
+from models.TokenModel import TokenModel, Token
 from pydantic import BaseModel
+from fastapi.responses import JSONResponse
 
 auth_router = APIRouter(tags=["Auth"])
 
 
 @auth_router.post(
     "/token",
-    response_model=Token,
 )
 async def get_access_token(
     username: str = Form(
@@ -25,13 +25,14 @@ async def get_access_token(
         examples=["Matthew.Snyder@alleghenycounty.us"],
     ),
     password: str = Form(examples=["secret1234"]),
-    scope: str = Form(default="user"),
 ):
-    token = await callAPI(
-        TokenModel.verify_token,
-        {"username": username, "password": password, "scope": scope},
+    res = await callAPI(
+        TokenModel.verify_credentials,
+        {"username": username, "password": password},
     )
-    return {"access_token": token, "type": "bearer"}
+    content = {"token": res["token"], "type": "bearer", "user": res["payload"]}
+    response = JSONResponse(content=content)
+    return response
 
 
 @auth_router.post(

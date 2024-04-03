@@ -9,11 +9,11 @@ from typing import Callable, List, Dict, Any
 from typing_extensions import Annotated
 from enum import Enum
 import pdb
-from .models.CRUDModel import CRUDModel
-from .routes import ach, auth, roc, users
-from .lib import callAPI
-from .models.UserModel import UserModel
-from .models.TokenModel import TokenModel, TokenData
+from models.CRUDModel import CRUDModel
+from routes import ach, auth, roc, users
+from lib import callAPI
+from models.UserModel import UserModel
+from models.TokenModel import TokenModel, TokenData
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
@@ -48,14 +48,16 @@ async def validation_exception_handler(request: Request, exc):
     print(exc)
 
 
-# @app.middleware("http")
-# async def debug_request(request: Request, call_next):
-#     try:
-#         response = await call_next(request)
-#         return response
-#     except Exception as e:
-#         print(str(e))
-#         raise HTTPException(status_code=500, detail=str(e))
+@app.middleware("http")
+async def debug_request(request: Request, call_next):
+    try:
+        body = await request.body()
+        print(body)
+        response = await call_next(request)
+        return response
+    except Exception as e:
+        print(str(e))
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 class Tags(Enum):
@@ -90,7 +92,3 @@ async def get_department_by_id(
     CRUDModel.set_table("departments")
     department = await callAPI(CRUDModel.get_by_id, department_id)
     return {"department": department}
-
-
-if __name__ == "__main__":
-    uvicorn.run("app:app", host="0.0.0.0", port=8000, reload=True)

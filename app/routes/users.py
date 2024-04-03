@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Query, Path
-from ..models.UserModel import UserModel
-from ..lib.callAPI import callAPI
+from models.UserModel import UserModel
+from lib.callAPI import callAPI
 from typing import Union
 from typing_extensions import Annotated
 
