@@ -102,3 +102,22 @@ class ROCModel(CRUDModel):
                 (roc_id,),
             )
             return cursor.fetchone()
+
+    @classmethod
+    async def get_rocs(cls, limit=10, offset=0, booked=False):
+        with ROCModel._cursor() as cursor:
+            cursor.execute(
+                f"""
+                SELECT rocs.*, users.first_name, users.last_name, departments.name as department_name, SUM(ach_credits.amount_in_cents) as ach_total
+                FROM rocs 
+                JOIN ach_credits ON rocs.id = ach_credits.roc_id
+                JOIN users ON rocs.user_id = users.id
+                JOIN departments ON users.department_id = departments.id
+                WHERE booked IS {"NOT NULL" if booked else "NULL"}
+                GROUP BY rocs.id 
+                LIMIT %s
+                OFFSET %s;
+                """,
+                (limit, offset),
+            )
+            return cursor.fetchall()
