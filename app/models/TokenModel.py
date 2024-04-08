@@ -33,7 +33,8 @@ class Token(BaseModel):
 
 
 class TokenData(BaseModel):
-    id: int
+    id: Union[int, None]
+    username: str
     department_id: int
     scope: List[str]
 
@@ -75,12 +76,13 @@ class TokenModel(CRUDModel):
             "scope": user.get("scope", ""),
         }
         token = TokenModel.create_access_token(data={"id": user.get("id"), **payload})
-        return {"token": token, "payload": payload}
+        return {"access_token": token, "payload": payload}
 
     @staticmethod
     async def decode_token(
         security_scopes: SecurityScopes, token: str = Depends(oauth2_scheme)
     ):
+        print(security_scopes.scopes)
         if security_scopes.scopes:
             authenticate_value = f'Bearer scope="{security_scopes.scope_str}"'
         else:
@@ -93,7 +95,7 @@ class TokenModel(CRUDModel):
         try:
             payload = jwt.decode(token, os.getenv("SECRET_KEY"), os.getenv("ALGORITHM"))
             username: str = payload.get("username")
-            token_scopes = payload.get("scope", "")
+            token_scopes = payload.get("scope", "").split(" ")
 
             print(payload)
             print(token_scopes)
@@ -104,8 +106,8 @@ class TokenModel(CRUDModel):
         user = await TokenModel.get_user_by_email(payload.get("username"))
         if user is None:
             raise credentials_exception
-        for scope in security_scopes.scopes:
-            if scope not in token_scopes:
+        for scope in token_scopes:
+            if scope not in security_scopes.scopes:
                 raise HTTPException(
                     status_code=status.HTTP_401_UNAUTHORIZED,
                     detail="Not enough permissions",

@@ -31,7 +31,11 @@ async def get_access_token(
         {"username": username, "password": password},
     )
     # content = {"token": res["token"], "type": "bearer", "user": res["payload"]}
-    content = {"token": res["token"], "type": "bearer", "user": res["payload"]}
+    content = {
+        "access_token": res["access_token"],
+        "token_type": "bearer",
+        "user": res["payload"],
+    }
     response = JSONResponse(content=content)
     return response
 

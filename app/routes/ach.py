@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Body, UploadFile, Query, Security, Form
+from fastapi import APIRouter, Depends, Body, UploadFile, Query, Security, Form, File
 from lib.callAPI import callAPI
 from models.ACHModel import ACHModel, NewAchCredit, ACHCredit, NewCreditDescription
 from pydantic import BaseModel, Field
@@ -27,7 +27,9 @@ class AchSearchParams(BaseModel):
 
 @ach_router.get("/")
 async def search_ach_credits(
-    token: Annotated[TokenData, Security(TokenModel.decode_token, scopes=["user"])],
+    token: Annotated[
+        TokenData, Security(TokenModel.decode_token, scopes=["user", "admin"])
+    ],
     params: Annotated[AchSearchParams, Depends()],
 ):
     print(token)
@@ -84,8 +86,8 @@ async def delete_ach_credit(
     "/batch",
 )
 async def import_ach_credits_from_csv(
-    file: Annotated[UploadFile, Form()],
     token: Annotated[TokenData, Security(TokenModel.decode_token, scopes=["admin"])],
+    file: UploadFile = File(),
 ):
     await callAPI(ACHModel.bulk_import_from_csv, file)
     return {"msg": "Credits successfully imported"}

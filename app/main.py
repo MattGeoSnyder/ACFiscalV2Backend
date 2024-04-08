@@ -43,8 +43,6 @@ app.add_middleware(
 
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc):
-    request_body = await request.body()
-    print(request_body)
     print(exc)
 
 
