@@ -33,7 +33,7 @@ class Token(BaseModel):
 
 
 class TokenData(BaseModel):
-    id: Union[int, None]
+    user_id: str
     username: str
     department_id: int
     scope: List[str]
@@ -71,6 +71,7 @@ class TokenModel(CRUDModel):
             raise HTTPException(401, "Unauthorized from verify_token")
         print(user)
         payload = {
+            "user_id": user.get("id", "1"),
             "username": form_data.get("username"),
             "department_id": user.get("department_id"),
             "scope": user.get("scope", ""),

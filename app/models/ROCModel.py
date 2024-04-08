@@ -22,12 +22,14 @@ class ROCModel(CRUDModel):
     def __init__(self):
         super().__init__()
 
-    @staticmethod
+    @classmethod
     async def post_roc(
+        cls,
         roc: UploadFile,
         supporting_docs: List[UploadFile],
         creditIds: List[int],
         total: int,
+        user_id: str = "1",
     ):
         print(creditIds)
         if supporting_docs:
@@ -45,7 +47,7 @@ class ROCModel(CRUDModel):
                     INSERT INTO rocs (user_id, amount_in_cents) VALUES (%s, %s);
 
                     """,
-                    (1, total),
+                    (user_id, total),
                 )
 
                 cursor.execute("SET @roc_id = LAST_INSERT_ID();")
@@ -90,7 +92,7 @@ class ROCModel(CRUDModel):
             ROCModel._cursor().execute("ROLLBACK;")
             raise e
 
-    @staticmethod
+    @classmethod
     async def get_roc_by_id(roc_id: int):
         with ROCModel._cursor() as cursor:
             cursor.execute(
