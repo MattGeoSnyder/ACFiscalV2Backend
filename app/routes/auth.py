@@ -30,6 +30,7 @@ async def get_access_token(
         TokenModel.verify_credentials,
         {"username": username, "password": password},
     )
+    # content = {"token": res["token"], "type": "bearer", "user": res["payload"]}
     content = {"token": res["token"], "type": "bearer", "user": res["payload"]}
     response = JSONResponse(content=content)
     return response
