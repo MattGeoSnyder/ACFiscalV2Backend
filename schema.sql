@@ -45,7 +45,8 @@ DROP TABLE IF EXISTS rocs;
 CREATE TABLE IF NOT EXISTS rocs (
   id SERIAL PRIMARY KEY,
   amount_in_cents integer NOT NULL,
-  user_id integer DEFAULT NULL REFERENCES users
+  user_id integer DEFAULT NULL REFERENCES users,
+  booked date DEFAULT NULL,
 );
 
 DROP TABLE IF EXISTS ach_credits;
