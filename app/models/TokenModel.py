@@ -116,6 +116,7 @@ class TokenModel(CRUDModel):
                 )
         return payload
 
+    # TODO: Need to ensure user name
     @classmethod
     async def signup(cls, user):
         existing_user = await cls.get_user_by_email(user.get("email"))
