@@ -1,5 +1,5 @@
-from fastapi import APIRouter, UploadFile, Form, Security, Query, File
-from models.ROCModel import ROCModel
+from fastapi import APIRouter, UploadFile, Form, Security, Query, File, Body, Path
+from models.ROCModel import ROCModel, Fund
 from models.TokenModel import TokenModel, TokenData
 from lib.callAPI import callAPI
 from typing import List, Union, Any
@@ -33,4 +33,14 @@ async def post_roc(
     roc_id = await callAPI(
         ROCModel.post_roc, roc, docs, credits, total, token.get("user_id")
     )
-    return {"msg": "ROC posted successfully"}
+    return {"message": "ROC posted successfully"}
+
+
+@roc_router.patch("/{roc_id}")
+async def book_roc(
+    token: Annotated[TokenData, Security(TokenModel.decode_token, scopes=["admin"])],
+    roc_id: Annotated[int, Path()],
+    fund: Annotated[Fund, Body()],
+):
+    await callAPI(ROCModel.book_roc, roc_id, **fund.model_dump())
+    return {"message": "ROC booked successfully"}

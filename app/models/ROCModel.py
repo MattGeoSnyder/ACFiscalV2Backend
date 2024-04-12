@@ -1,7 +1,7 @@
 from .CRUDModel import CRUDModel
 from pydantic import BaseModel, Field
 from fastapi import UploadFile
-from typing import List, Union
+from typing import List, Union, Dict
 from datetime import datetime
 from lib.parse_roc import parse_roc
 import pdb
@@ -14,6 +14,10 @@ class NewROC(BaseModel):
     # TODO: Need to change default value
 
     user_id: int = Field(1)
+
+
+class Fund(BaseModel):
+    fund: str
 
 
 class ROCModel(CRUDModel):
@@ -47,7 +51,7 @@ class ROCModel(CRUDModel):
                     INSERT INTO rocs (user_id, amount_in_cents) VALUES (%s, %s);
 
                     """,
-                    (user_id, total),
+                    (user_id, total, current),
                 )
 
                 cursor.execute("SET @roc_id = LAST_INSERT_ID();")
@@ -108,7 +112,9 @@ class ROCModel(CRUDModel):
         with ROCModel._cursor() as cursor:
             cursor.execute(
                 f"""
-                SELECT rocs.*, users.first_name, users.last_name, departments.name as department_name, SUM(ach_credits.amount_in_cents) as ach_total
+                SELECT rocs.*, users.first_name as first_name, users.last_name as last_name, 
+                    departments.name as department_name, SUM(ach_credits.amount_in_cents) as ach_total,
+                    MAX(ach_credits.claimed) as claimed
                 FROM rocs 
                 JOIN ach_credits ON rocs.id = ach_credits.roc_id
                 JOIN users ON rocs.user_id = users.id
@@ -121,3 +127,14 @@ class ROCModel(CRUDModel):
                 (limit, offset),
             )
             return cursor.fetchall()
+
+    @classmethod
+    async def book_roc(cls, roc_id: int, fund: str):
+        with ROCModel._cursor() as cursor:
+            cursor.execute(
+                """
+                UPDATE rocs SET booked = NOW(), fund = %s WHERE id = %s
+                """,
+                (fund, roc_id),
+            )
+            return "ROC claimed successfully"
