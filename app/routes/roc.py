@@ -1,6 +1,7 @@
 from fastapi import APIRouter, UploadFile, Form, Security, Query, File, Body, Path
 from models.ROCModel import ROCModel, Fund
 from models.TokenModel import TokenModel, TokenData
+from models.ROCLineItemModel import ROCLineItem
 from lib.callAPI import callAPI
 from typing import List, Union, Any
 from typing_extensions import Annotated
@@ -34,6 +35,15 @@ async def post_roc(
         ROCModel.post_roc, roc, docs, credits, total, token.get("user_id")
     )
     return {"message": "ROC posted successfully"}
+
+
+@roc_router.get("/{roc_id}")
+async def get_roc_line_items_by_id(
+    token: Annotated[TokenData, Security(TokenModel.decode_token, scopes=["admin"])],
+    roc_id: Annotated[int, Path()],
+):
+    roc = await callAPI(ROCLineItem.search_line_item_by_roc_id, roc_id)
+    return {"roc": roc}
 
 
 @roc_router.patch("/{roc_id}")

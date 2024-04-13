@@ -1,8 +1,10 @@
 from pydantic import BaseModel
 from typing import Union
+from .CRUDModel import CRUDModel
+from typing import Dict, List
 
 
-class ROCLineItem(BaseModel):
+class ROCLineItem(CRUDModel):
     id: int
     mcu: str
     cost_center: str
@@ -46,16 +48,39 @@ class ROCLineItem(BaseModel):
     def delete_line_item(roc_id: int):
         pass
 
-    @staticmethod
-    def search_line_item_by_roc_id(roc_id: int):
-        with NewROCLineItem._cursor() as cursor:
+    @classmethod
+    async def search_line_item_by_roc_id(cls, roc_id: int):
+        with ROCLineItem._cursor() as cursor:
             cursor.execute(
                 """
-                SELECT * FROM roc_descriptions WHERE roc_id = %s
+                SELECT rocs.*, rd.*
+                FROM rocs
+                JOIN roc_descriptions AS rd
+                ON rocs.id = rd.roc_id 
+                WHERE roc_id = %s
                 """,
                 (roc_id,),
             )
-            return cursor.fetchall()
+            res: List[Dict] = cursor.fetchall()
+            roc = {}
+            roc["line_items"] = []
+            roc["id"] = res[0]["id"]
+            roc["amount_in_cents"] = res[0]["amount_in_cents"]
+            roc["user_id"] = res[0]["user_id"]
+            roc["booked"] = res[0]["booked"]
+            roc["fund"] = res[0]["fund"]
+            for item in res:
+                line_item = {}
+                line_item["id"] = item["rd.id"]
+                line_item["mcu"] = item["mcu"]
+                line_item["cost_center"] = item["cost_center"]
+                line_item["object_number"] = item["object_number"]
+                line_item["subsidiary"] = item["subsidiary"]
+                line_item["subledger"] = item["subledger"]
+                line_item["explanation"] = item["explanation"]
+                line_item["amount_in_cents"] = item["amount_in_cents"]
+                roc["line_items"].append(line_item)
+            return roc
 
     @staticmethod
     def search_line_item_by_department_id(department_id: int):
