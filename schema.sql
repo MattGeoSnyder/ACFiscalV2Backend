@@ -47,6 +47,7 @@ CREATE TABLE IF NOT EXISTS rocs (
   fund VARCHAR(10),
   amount_in_cents integer NOT NULL,
   user_id integer DEFAULT NULL REFERENCES users,
+  department_id integer DEFAULT NULL REFERENCES departments,
   booked date DEFAULT NULL,
 );
 

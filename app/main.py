@@ -10,7 +10,7 @@ from typing_extensions import Annotated
 from enum import Enum
 import pdb
 from models.CRUDModel import CRUDModel
-from routes import ach, auth, roc, users
+from routes import ach, auth, roc, users, email
 from lib import callAPI
 from models.UserModel import UserModel
 from models.TokenModel import TokenModel, TokenData
@@ -21,6 +21,7 @@ ach_router = ach.ach_router
 auth_router = auth.auth_router
 roc_router = roc.roc_router
 user_router = users.user_router
+email_router = email.email_router
 callAPI = callAPI.callAPI
 
 app = FastAPI()
@@ -29,6 +30,7 @@ app.include_router(ach_router)
 app.include_router(auth_router)
 app.include_router(roc_router)
 app.include_router(user_router)
+app.include_router(email_router)
 
 origins = ["*"]
 

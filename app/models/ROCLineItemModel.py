@@ -4,6 +4,25 @@ from .CRUDModel import CRUDModel
 from typing import Dict, List
 
 
+class NewROCLineItem(BaseModel):
+    mcu: str
+    cost_center: str
+    object_number: str
+    subsidiary: Union[str, None]
+    subledger: Union[str, None]
+    explanation: str
+    amount_in_cents: int
+
+
+class ROCDetail(BaseModel):
+    id: int
+    amount_in_cents: int
+    user_id: int
+    booked: bool
+    fund: str
+    line_items: List[NewROCLineItem]
+
+
 class ROCLineItem(CRUDModel):
     id: int
     mcu: str
@@ -49,7 +68,7 @@ class ROCLineItem(CRUDModel):
         pass
 
     @classmethod
-    async def search_line_item_by_roc_id(cls, roc_id: int):
+    async def search_line_item_by_roc_id(cls, roc_id: int, repsonse_model=ROCDetail):
         with ROCLineItem._cursor() as cursor:
             cursor.execute(
                 """
@@ -95,13 +114,3 @@ class ROCLineItem(CRUDModel):
                 (department_id,),
             )
             return cursor.fetchall()
-
-
-class NewROCLineItem(BaseModel):
-    mcu: str
-    cost_center: str
-    object_number: str
-    subsidiary: Union[str, None]
-    subledger: Union[str, None]
-    explanation: str
-    amount_in_cents: int

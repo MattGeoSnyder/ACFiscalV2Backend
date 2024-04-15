@@ -61,7 +61,11 @@ class UserModel(CRUDModel):
     async def get_user_by_id(id: int):
         with UserModel._cursor() as cursor:
             cursor.execute(
-                "SELECT id, email, first_name, last_name, department_id FROM users WHERE id = %s;",
+                """SELECT u.id, u.email, u.first_name, u.last_name, u.department_id, d.name 
+                FROM users u 
+                JOIN departments d
+                ON u.department_id = d.id
+                WHERE u.id = %s;""",
                 (id,),
             )
             user = cursor.fetchone()
