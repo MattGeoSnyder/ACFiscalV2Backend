@@ -8,11 +8,10 @@ from models.UserModel import UserModel
 from typing import Dict
 from dotenv import load_dotenv
 import os
+import ssl
 
 load_dotenv()
 
-
-s = smtplib.SMTP("localhost:1025")
 
 email_router = APIRouter(prefix="/email", tags=["Email"])
 
@@ -39,8 +38,13 @@ async def book_roc_email(roc_id, fund: str):
     )
 
     # TODO: Change email addresses after testing. Do not hard code
-    message["From"] = s.user
+    message["From"] = "actreasurersoffice@gmail.com"
     message["To"] = "mattgeosnyder@gmail.com"
 
-    s.send_message(message)
-    s.quit()
+    context = ssl.create_default_context()
+
+    with smtplib.SMTP_SSL("smtp.gmail.com", 465, context=context) as server:
+        server.login("actreasurersoffice@gmail.com", os.getenv("GMAIL_PASSWORD"))
+        server.send_message(message)
+        server.send_message(message)
+        server.quit()
