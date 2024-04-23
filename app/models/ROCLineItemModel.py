@@ -1,4 +1,5 @@
 from pydantic import BaseModel
+from fastapi import Query
 from typing import Union
 from .CRUDModel import CRUDModel
 from typing import Dict, List

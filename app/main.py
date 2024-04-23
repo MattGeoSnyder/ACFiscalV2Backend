@@ -1,18 +1,13 @@
-from fastapi import applications
-from fastapi import FastAPI, Path, HTTPException, Request, Depends, Security
+from fastapi import FastAPI, Path, Request, Security
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from fastapi.security import OAuth2PasswordBearer
 from fastapi.middleware.cors import CORSMiddleware
-import uvicorn
-from typing import Callable, List, Dict, Any
 from typing_extensions import Annotated
 from enum import Enum
-import pdb
 from models.CRUDModel import CRUDModel
 from routes import ach, auth, roc, users, email
 from lib import callAPI
-from models.UserModel import UserModel
 from models.TokenModel import TokenModel, TokenData
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
