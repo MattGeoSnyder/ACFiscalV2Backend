@@ -1,10 +1,21 @@
-from fastapi import APIRouter, UploadFile, Form, Security, Query, File, Body, Path
+from fastapi import (
+    APIRouter,
+    UploadFile,
+    Form,
+    Security,
+    Query,
+    File,
+    Body,
+    Path,
+    Depends,
+)
 from models.ROCModel import ROCModel, Fund
 from models.TokenModel import TokenModel, TokenData
 from models.ROCLineItemModel import ROCLineItem
 from lib.callAPI import callAPI
 from typing import List, Union, Any
 from typing_extensions import Annotated
+from models.ROCLineItemModel import ROCLineItemModel
 
 roc_router = APIRouter(prefix="/roc", tags=["ROC"])
 
@@ -37,7 +48,7 @@ async def post_roc(
     return {"message": "ROC posted successfully"}
 
 
-@roc_router.get("/{roc_id}")
+@roc_router.get("/{roc_id: int}")
 async def get_roc_line_items_by_id(
     token: Annotated[TokenData, Security(TokenModel.decode_token, scopes=["admin"])],
     roc_id: Annotated[int, Path()],
@@ -46,7 +57,7 @@ async def get_roc_line_items_by_id(
     return {"roc": roc}
 
 
-@roc_router.patch("/{roc_id}")
+@roc_router.patch("/{roc_id: int}")
 async def book_roc(
     token: Annotated[TokenData, Security(TokenModel.decode_token, scopes=["admin"])],
     roc_id: Annotated[int, Path()],
@@ -54,3 +65,14 @@ async def book_roc(
 ):
     await callAPI(ROCModel.book_roc, roc_id, **fund.model_dump())
     return {"message": "ROC booked successfully"}
+
+
+@roc_router.get("/search")
+async def search_roc_line_items(
+    token: Annotated[TokenData, Security(TokenModel.decode_token, scopes=["admin"])],
+    params: ROCLineItemModel = Depends(),
+    limit: int = Query(20),
+    offset: int = Query(0),
+):
+    line_items = await callAPI(ROCLineItem.search_roc_line_items, params, limit, offset)
+    return {"line_items": line_items}

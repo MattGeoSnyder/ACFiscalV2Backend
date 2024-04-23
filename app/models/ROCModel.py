@@ -5,6 +5,7 @@ from typing import List, Union, Dict
 from datetime import datetime
 from lib.parse_roc import parse_roc
 import pdb
+from models.ROCLineItemModel import ROCLineItemModel
 
 
 class NewROC(BaseModel):

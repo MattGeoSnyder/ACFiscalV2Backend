@@ -24,6 +24,15 @@ class ROCDetail(BaseModel):
     line_items: List[NewROCLineItem]
 
 
+class ROCLineItemModel(BaseModel):
+    mcu: Union[str, None] = Query(None)
+    cost_center: Union[str, None] = Query(None)
+    object_number: Union[str, None] = Query(None)
+    subsidiary: Union[str, None] = Query(None)
+    explanation: Union[str, None] = Query(None)
+    amount_in_cents: Union[int, None] = Query(None)
+
+
 class ROCLineItem(CRUDModel):
     id: int
     mcu: str
@@ -113,5 +122,37 @@ class ROCLineItem(CRUDModel):
                 WHERE claimed IS NOT NULL AND department_id = %s
                 """,
                 (department_id,),
+            )
+            return cursor.fetchall()
+
+    @classmethod
+    async def search_roc_line_items(
+        cls, params: ROCLineItemModel, limit: int = 20, offset: int = 0
+    ):
+        with ROCLineItem._cursor() as cursor:
+
+            param_values = []
+            for val in params.model_dump().values():
+                if val:
+                    param_values.append(val)
+
+            query = """SELECT * FROM roc_descriptions JOIN rocs ON roc_descriptions.roc_id = rocs.id """
+            if params.mcu:
+                query += "AND mcu == %s "
+            if params.cost_center:
+                query += "AND cost_center == %s "
+            if params.object_number:
+                query += "AND object_number == %s "
+            if params.subsidiary:
+                query += "AND subsidiary == %s "
+            if params.explanation:
+                query += "AND explanation LIKE %s "
+            if params.amount_in_cents:
+                query += "AND amount_in_cents == %s "
+            query += "LIMIT %s OFFSET %s;"
+
+            cursor.execute(
+                query,
+                (*(param_values), limit, offset),
             )
             return cursor.fetchall()
