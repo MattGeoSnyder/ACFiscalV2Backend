@@ -3,3 +3,4 @@ __pycache__/
 .pspw
 .env
 apps.googleusercontent.com.json
+.venv/
