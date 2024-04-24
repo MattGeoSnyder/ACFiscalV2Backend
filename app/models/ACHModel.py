@@ -1,4 +1,4 @@
-from .CRUDModel import CRUDModel
+from models.CRUDModel import CRUDModel
 from typing import List, Union, Dict
 import csv
 import re
@@ -6,8 +6,55 @@ import io
 from datetime import date
 import math
 from pydantic import BaseModel, Field
-from fastapi import UploadFile
+from fastapi import UploadFile, Query
 import json
+from lib.constants import MAX_QUERY_LENGTH
+from enum import Enum
+
+
+class SortColumns(Enum):
+    received: str = "received"
+    amount: str = "amount_in_cents"
+
+
+class Fund(Enum):
+    bond_interest: str = "11102"
+    liquid_fuels: str = "11103"
+    dpw: str = "11104"
+    licensing: str = "11105"
+    econ: str = "11106"
+    kane: str = "11108"
+    aging: str = "11112"
+    dhs: str = "11113"
+    general_fund: str = "11151"
+
+
+class AchSearchParams(BaseModel):
+    outstanding: bool = Field(False)
+    amount_lb: Union[int, None] = Field(None)
+    amount_ub: Union[int, None] = Field(None)
+    fund: Union[Fund, None] = Field(
+        Query(
+            None,
+            description="Can only search by fund number",
+        )
+    )
+    description: Union[str, None] = Field(None)
+    received_lb: Union[str, None] = Field(None)
+    received_ub: Union[str, None] = Field(None)
+    claimed_lb: Union[str, None] = Field(None)
+    claimed_ub: Union[str, None] = Field(None)
+    roc_id: Union[int, None] = Field(None)
+    department_id: Union[int, None] = Field(None)
+    order_by: Union[SortColumns, None] = Field(
+        Query(
+            SortColumns.received,
+            description="Can only sort by received or amount_in_cents",
+        )
+    )
+    desc: Union[bool, None] = Field(True)
+    limit: Union[int, None] = Field(MAX_QUERY_LENGTH)
+    skip: int = Field(0)
 
 
 class NewAchCredit(BaseModel):
@@ -58,78 +105,90 @@ class ACHModel(CRUDModel):
 
         return department_id
 
-    @staticmethod
-    async def search_ach_credits(**kwargs):
-        query = ""
+    @classmethod
+    async def search_ach_credits(
+        cls,
+        search: AchSearchParams,
+    ):
+        query = "SELECT ach_credits.*, departments.name as department FROM ach_credits JOIN departments ON ach_credits.department_id = departments.id "
         params = []
 
-        if kwargs["outstanding"]:
-            query += "SELECT * FROM ach_credits WHERE claimed IS NULL "
+        if search.outstanding:
+            query += "WHERE claimed IS NULL "
         else:
-            query += "SELECT * FROM ach_credits WHERE claimed IS NOT NULL "
+            query += "WHERE claimed IS NOT NULL "
 
-        if kwargs["amount_lb"] and kwargs["amount_ub"]:
+        if search.amount_lb and search.amount_ub:
             query += "AND amount_in_cents BETWEEN %s AND %s "
-            params.append(kwargs["amount_lb"])
-            params.append(kwargs["amount_ub"])
-        elif kwargs["amount_lb"]:
+            params.append(search.amount_lb)
+            params.append(search.amount_ub)
+        elif search.amount_lb:
             query += "AND amount_in_cents >= %s "
-            params.append(kwargs["amount_lb"])
-        elif kwargs["amount_ub"]:
+            params.append(search.amount_lb)
+        elif search.amount_ub:
             query += "AND amount_in_cents <= %s "
-            params.append(kwargs["amount_ub"])
+            params.append(search.amount_ub)
 
-        if kwargs["fund"]:
+        if search.fund:
             query += "AND fund = %s "
-            params.append(kwargs["fund"])
+            params.append(search.fund)
 
-        if kwargs["description"]:
+        if search.description:
             query += "AND description LIKE %s "
             key_words: List[str] = [
-                key_word.strip() for key_word in kwargs["description"].split(",")
+                key_word.strip() for key_word in search.description.split(",")
             ]
             description = "%" + "%".join(key_words) + "%"
             params.append(description)
 
-        if kwargs["received_lb"] and kwargs["received_ub"]:
+        if search.received_lb and search.received_ub:
             query += "AND received BETWEEN %s AND %s "
-            params.append(kwargs["received_lb"])
-            params.append(kwargs["received_ub"])
-        elif kwargs["received_lb"]:
+            params.append(search.received_lb)
+            params.append(search.received_ub)
+        elif search.received_lb:
             query += "AND received > %s "
-            params.append(kwargs["received_lb"])
-        elif kwargs["received_ub"]:
+            params.append(search.received_lb)
+        elif search.received_ub:
             query += "AND received < %s "
-            params.append(kwargs["received_ub"])
+            params.append(search.received_ub)
 
-        if kwargs["claimed_lb"] and kwargs["claimed_ub"]:
+        if search.claimed_lb and search.claimed_ub:
             query += "AND claimed BETWEEN %s AND %s "
-            params.append(kwargs["claimed_lb"])
-            params.append(kwargs["claimed_ub"])
-        elif kwargs["claimed_lb"]:
+            params.append(search.claimed_lb)
+            params.append(search.claimed_ub)
+        elif search.claimed_lb:
             query += "AND claimed > %s "
-            params.append(kwargs["claimed_lb"])
-        elif kwargs["claimed_ub"]:
+            params.append(search.claimed_lb)
+        elif search.claimed_ub:
             query += "AND claimed < %s "
-            params.append(kwargs["claimed_ub"])
+            params.append(search.claimed_ub)
 
-        if kwargs["roc_id"]:
+        if search.roc_id:
             query += "AND roc_id = %s "
-            params.append(kwargs["roc_id"])
+            params.append(search.roc_id)
 
-        if kwargs["department_id"]:
+        if search.department_id:
             query += "AND department_id = %s "
-            params.append(kwargs["department_id"])
+            params.append(search.department_id)
 
-        query += "ORDER BY received DESC, amount_in_cents DESC "
-        if kwargs["skip"]:
+        if search.order_by:
+            query += "ORDER BY %s "
+            params.append(search.order_by)
+            if search.desc:
+                query += "DESC "
+            else:
+                query += "ASC "
+        else:
+            query += "ORDER BY received DESC, amount_in_cents DESC "
+
+        if search.skip:
             query += "SKIP %s "
-            params.append(kwargs["skip"])
+            params.append(search.skip)
 
         query += "LIMIT %s;"
-        params.append(kwargs["limit"])
+        params.append(search.limit)
 
-        with ACHModel._cursor() as cursor:
+        with cls._cursor() as cursor:
             cursor.execute(query, (*params,))
 
             ach_credits = cursor.fetchall()

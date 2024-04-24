@@ -1,28 +1,19 @@
 from fastapi import APIRouter, Depends, Body, UploadFile, Query, Security, Form, File
 from lib.callAPI import callAPI
-from models.ACHModel import ACHModel, NewAchCredit, ACHCredit, NewCreditDescription
+from models.ACHModel import (
+    ACHModel,
+    NewAchCredit,
+    ACHCredit,
+    NewCreditDescription,
+    AchSearchParams,
+)
 from pydantic import BaseModel, Field
 from typing import Union
 from typing_extensions import Annotated
 from models.TokenModel import TokenModel, TokenData
+from lib.constants import MAX_QUERY_LENGTH
 
 ach_router = APIRouter(prefix="/ach", tags=["ACH Credits"])
-
-
-class AchSearchParams(BaseModel):
-    outstanding: bool
-    amount_lb: Union[int, None] = Field(None)
-    amount_ub: Union[int, None] = Field(None)
-    fund: Union[int, None] = Field(None)
-    description: Union[str, None] = Field(None)
-    received_lb: Union[str, None] = Field(None)
-    received_ub: Union[str, None] = Field(None)
-    claimed_lb: Union[str, None] = Field(None)
-    claimed_ub: Union[str, None] = Field(None)
-    roc_id: Union[int, None] = Field(None)
-    department_id: Union[int, None] = Field(None)
-    limit: Union[int, None] = Field()
-    skip: int = Field(0, ge=0)
 
 
 @ach_router.get("/")
@@ -32,8 +23,7 @@ async def search_ach_credits(
     ],
     params: Annotated[AchSearchParams, Depends()],
 ):
-    print(token)
-    ach_credits = await callAPI(ACHModel.search_ach_credits, **params.model_dump())
+    ach_credits = await callAPI(ACHModel.search_ach_credits, params)
     return {"ach_credits": ach_credits}
 
 
