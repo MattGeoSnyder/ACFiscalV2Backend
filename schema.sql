@@ -58,6 +58,7 @@ CREATE TABLE IF NOT EXISTS ach_credits (
   amount_in_cents integer,
   description text,
   received date,
+  fund VARCHAR(10) DEFAULT NULL,
   claimed date DEFAULT NULL,
   roc_id integer DEFAULT NULL REFERENCES rocs, 
   department_id integer DEFAULT NULL REFERENCES departments 
